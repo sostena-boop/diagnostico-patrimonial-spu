@@ -18,5 +18,5 @@ npm run dev
 
 ## Publicação
 
-O GitHub Actions compila e publica automaticamente a branch `main` no
-GitHub Pages.
+O pacote estático validado fica em `docs/`. O GitHub Actions publica esse
+conteúdo automaticamente no GitHub Pages a cada atualização da branch `main`.
