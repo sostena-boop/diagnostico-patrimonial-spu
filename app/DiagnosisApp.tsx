@@ -1,12 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-type Stage = 'regime' | 'origin' | 'search' | 'result' | 'steps' | 'done' | 'view';
+type Stage = 'origin' | 'search' | 'result' | 'steps' | 'done' | 'view';
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type Origin = 'with-rip' | 'without-rip';
-type Divergence = { step: Step; field: string; value: string };
+type Divergence = {
+  id: number;
+  step: Step;
+  field: string;
+  value: string;
+  originalValue?: string;
+  automatic?: boolean;
+};
 type Forwarding = { id: number; type: string; detail: string };
+type AttachmentEntry = { id: number; name: string; category: string };
 
 const stepNames = [
   'Dados do imóvel',
@@ -16,49 +24,6 @@ const stepNames = [
   'Encaminhamentos',
   'Revisão e conclusão',
 ];
-
-const terminalRegimes = `Dação em pagamento
-Declaração de Interesse do Serviço Publico
-Doação
-Integralização de cotas em Fundo de Investimento Imobiliário
-Investidura
-Permuta
-Remição do foro
-Venda
-Transferência de propriedade para fins de Reurb-S
-Aforamento gratuito
-Aforamento oneroso
-Concessão de Direito Real de Laje Gratuita
-Concessão de Direito Real de Laje Onerosa
-Concessão de Direito Real de Uso Gratuita
-Concessão de Direito Real de Uso Onerosa
-Concessão de Direito de Superfície Gratuita
-Concessão de Direito de Superfície Onerosa
-Concessão de uso especial para fins de moradia (CUEM)
-Promessa de compra e venda
-Transferência de direito real de uso para Reurb-S
-Arrendamento
-Cessão de uso gratuita
-Cessão de uso onerosa
-Cessão de uso em condições especiais
-Cessão de uso provisória
-Locação para terceiros
-Permissão de uso para fins residenciais
-Transferência gratuita da posse
-Transferência onerosa da posse
-Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)
-Entrega
-Entrega provisória
-Guarda Provisória
-Transferência de gestão de orlas e praias
-Autorização de obras
-Autorização de passagem gratuita
-Autorização de passagem onerosa
-Autorização de uso para fins comerciais
-Autorização de uso sustentável
-Inscrição de ocupação
-Permissão de uso para eventos de curta duração`.split('\n')
-  .sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 const documentTypes = [
   'Planta (PDF)', 'Arquivo vetorial', 'Matrícula', 'Transcrição',
@@ -89,12 +54,18 @@ const forwardingOptions = [
   'Outra providência',
 ];
 
-function Field({ label, placeholder = '', disabled = false, area = false }: {
+function Field({ label, placeholder = '', disabled = false, area = false,
+  required = false, value, onChange }: {
   label: string; placeholder?: string; disabled?: boolean; area?: boolean;
+  required?: boolean; value?: string; onChange?: (value: string) => void;
 }) {
-  return <label className="prototype-field"><span>{label}</span>
-    {area ? <textarea placeholder={placeholder} disabled={disabled} /> :
-      <input placeholder={placeholder} disabled={disabled} />}
+  const control = value === undefined ? {} : { value };
+  return <label className="prototype-field"><span>{label}
+    {required && <b className="required-mark"> *</b>}</span>
+    {area ? <textarea placeholder={placeholder} disabled={disabled} {...control}
+      onChange={onChange ? (event) => onChange(event.target.value) : undefined} /> :
+      <input placeholder={placeholder} disabled={disabled} {...control}
+        onChange={onChange ? (event) => onChange(event.target.value) : undefined} />}
   </label>;
 }
 
@@ -136,14 +107,44 @@ function StepTitle({ step }: { step: Step }) {
   return <div className="step-heading"><p className="eyebrow">Etapa {step} de 6</p></div>;
 }
 
-function ImportedField({ label, value, large = false }: {
-  label: string; value: string; large?: boolean;
+function ImportedReviewField({ label, importedValue, reviewedValue, options,
+  onReview }: {
+  label: string; importedValue: string; reviewedValue: string; options?: string[];
+  onReview: (value: string) => void;
 }) {
-  return <div className={`field-box imported-field ${large ? 'large-field' : ''}`}>
-    <div className="field-label"><label>{label}</label></div>
-    {large ? <textarea value={value} readOnly disabled /> :
-      <input value={value} readOnly disabled />}
+  const [editing, setEditing] = useState(false);
+  const hasDivergence = Boolean(reviewedValue && reviewedValue !== importedValue);
+  return <div className={`field-box imported-field reviewable-imported ${hasDivergence ?
+    'diverged' : ''}`}>
+    <div className="field-label"><label>{label}</label>
+      <button type="button" className="divergence-trigger"
+        aria-expanded={editing || hasDivergence} onClick={() => setEditing(true)}>
+        <span aria-hidden="true">!</span>
+        {hasDivergence ? 'Editar divergência' : 'Registrar divergência'}
+      </button></div>
+    <input value={importedValue} readOnly disabled />
+    {(editing || hasDivergence) && <label className="reviewed-value">
+      <span>Valor apurado no diagnóstico</span>
+      {options ? <select value={reviewedValue}
+        onChange={(event) => onReview(event.target.value)}>
+        <option value="">Selecione o valor apurado</option>
+        {options.map((option) => <option key={option}>{option}</option>)}
+      </select> : <input value={reviewedValue}
+        placeholder="Informe o valor correto"
+        onChange={(event) => onReview(event.target.value)} />}
+      <span className="inline-divergence-actions">
+        <button type="button" onClick={() => setEditing(false)}>Fechar</button>
+        {hasDivergence && <button type="button" className="danger-link" onClick={() => {
+          onReview('');
+          setEditing(false);
+        }}>Remover divergência</button>}
+      </span>
+    </label>}
   </div>;
+}
+
+function ImportedSource({ system }: { system: 'SPUnet' | 'SIAPA' }) {
+  return <div className="imported-source"><strong>Origem dos dados — {system}</strong></div>;
 }
 
 function MapMock() {
@@ -160,9 +161,10 @@ function MapMock() {
   </div></Subsection>;
 }
 
-function Attachment({ id, title, category, files, onCategory, onFiles }: {
-  id: string; title?: string; category: string; files?: string[];
+function Attachment({ id, title, category, files, onCategory, onFiles, onRemove }: {
+  id: string; title?: string; category: string; files?: AttachmentEntry[];
   onCategory: (value: string) => void; onFiles: (files: FileList | null) => void;
+  onRemove: (id: number) => void;
 }) {
   return <Subsection title={title ?? 'Arquivos da etapa'}><div className="attachment-picker">
     <label><span>Tipo de documento</span><select value={category}
@@ -170,13 +172,39 @@ function Attachment({ id, title, category, files, onCategory, onFiles }: {
       <option value="">Selecione a tipologia</option>
       {documentTypes.map((item) => <option key={item}>{item}</option>)}
     </select></label>
-    <label className="file-button" htmlFor={id}>Selecionar arquivo</label>
-    <input className="hidden-file" id={id} type="file" multiple
+    <label className={`file-button ${!category ? 'disabled' : ''}`} htmlFor={id}>
+      {category ? 'Selecionar arquivo' : 'Selecione a tipologia'}</label>
+    <input className="hidden-file" id={id} type="file" multiple disabled={!category}
       onChange={(event) => onFiles(event.target.files)} />
   </div>{files?.length ? <ul className="file-list">
-    {files.map((file) => <li key={file}><strong>{category || 'Sem tipologia'}</strong>
-      <span>{file}</span></li>)}
+    {files.map((file) => <li key={file.id}><span><strong>{file.category}</strong>
+      <small>{file.name}</small></span><button type="button" className="danger-link"
+        onClick={() => onRemove(file.id)}>Excluir</button></li>)}
   </ul> : <p className="empty-state">Nenhum arquivo anexado nesta etapa.</p>}</Subsection>;
+}
+
+function SpecificDocument({ name, label, category, answer, files, accept,
+  onAnswer, onFiles, onRemove }: {
+  name: string; label: string; category: string; answer: string;
+  files: AttachmentEntry[]; accept?: string;
+  onAnswer: (value: string) => void; onFiles: (files: FileList | null) => void;
+  onRemove: (id: number) => void;
+}) {
+  const inputId = `specific-${name}`;
+  return <div className="document-availability">
+    <Choice label={label} name={name} options={['Sim', 'Não']} value={answer}
+      onChange={onAnswer} />
+    {answer === 'Sim' && <div className="specific-upload">
+      <div><strong>{category}</strong><small>Selecione o arquivo correspondente.</small></div>
+      <label className="file-button" htmlFor={inputId}>Selecionar arquivo</label>
+      <input className="hidden-file" id={inputId} type="file" multiple accept={accept}
+        onChange={(event) => onFiles(event.target.files)} />
+      {files.length > 0 && <ul className="file-list full-row">{files.map((file) =>
+        <li key={file.id}><span><strong>{file.category}</strong><small>{file.name}</small></span>
+          <button type="button" className="danger-link"
+            onClick={() => onRemove(file.id)}>Excluir</button></li>)}</ul>}
+    </div>}
+  </div>;
 }
 
 function Footer({ onBack, onSave, onNext, next = 'Salvar e continuar', disabled = false }: {
@@ -193,38 +221,37 @@ function Footer({ onBack, onSave, onNext, next = 'Salvar e continuar', disabled 
 }
 
 export default function Home() {
-  const [stage, setStage] = useState<Stage>('regime');
+  const [stage, setStage] = useState<Stage>('origin');
   const [step, setStep] = useState<Step>(1);
-  const [regime, setRegime] = useState('');
-  const [query, setQuery] = useState('');
-  const [regimeOpen, setRegimeOpen] = useState(false);
   const [origin, setOrigin] = useState<Origin>('with-rip');
   const [rip, setRip] = useState('0000001.23456-78');
   const [system, setSystem] = useState<'SPUnet' | 'SIAPA'>('SPUnet');
   const [manualReference, setManualReference] = useState('Nenhum');
   const [propertyType, setPropertyType] = useState('');
+  const [nature, setNature] = useState('');
   const [registry, setRegistry] = useState('');
+  const [ownership, setOwnership] = useState('');
   const [incorporation, setIncorporation] = useState('');
   const [subdivision, setSubdivision] = useState('');
   const [demarcation, setDemarcation] = useState('');
+  const [hasInterferences, setHasInterferences] = useState('');
+  const [hasAffectations, setHasAffectations] = useState('');
+  const [technicalDocuments, setTechnicalDocuments] = useState<Record<string, string>>({});
+  const [importedReviews, setImportedReviews] = useState<Record<string, string>>({});
   const [occurrences, setOccurrences] = useState<string[]>([]);
   const [forwardings, setForwardings] = useState<Forwarding[]>([]);
   const [draftForwardingType, setDraftForwardingType] = useState('');
   const [draftForwardingDetail, setDraftForwardingDetail] = useState('');
   const [observations, setObservations] = useState<Record<number, string>>({});
-  const [files, setFiles] = useState<Record<number, string[]>>({});
+  const [files, setFiles] = useState<Record<number, AttachmentEntry[]>>({});
   const [fileTypes, setFileTypes] = useState<Record<number, string>>({});
   const [capturedFields, setCapturedFields] = useState<
     Record<number, Record<string, string>>>({});
   const [divergences, setDivergences] = useState<Divergence[]>([]);
   const [acknowledged, setAcknowledged] = useState(false);
   const [toast, setToast] = useState('');
-  const [draftField, setDraftField] = useState('');
-  const [draftValue, setDraftValue] = useState('');
 
   const imported = origin === 'with-rip';
-  const filteredRegimes = useMemo(() => terminalRegimes.filter((item) =>
-    item.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))), [query]);
 
   function notify(text: string) {
     setToast(text);
@@ -232,8 +259,9 @@ export default function Home() {
   }
   function save() {
     window.localStorage.setItem('diagnostico-patrimonial-rascunho', JSON.stringify({
-      stage, step, regime, origin, rip, system, observations, divergences,
-      occurrences, forwardings, capturedFields, savedAt: new Date().toISOString(),
+      stage, step, origin, rip, system, observations, divergences,
+      occurrences, forwardings, capturedFields, files, importedReviews,
+      savedAt: new Date().toISOString(),
     }));
     notify('Rascunho salvo neste navegador.');
   }
@@ -241,10 +269,78 @@ export default function Home() {
     setter(selected.includes(item) ? selected.filter((value) => value !== item) :
       [...selected, item]);
   }
-  function attach(stepNumber: Step, nextFiles: FileList | null) {
-    if (nextFiles) setFiles((current) => ({
-      ...current, [stepNumber]: Array.from(nextFiles).map((file) => file.name),
+  function attach(stepNumber: Step, nextFiles: FileList | null, category?: string) {
+    if (!nextFiles?.length) return;
+    const selectedCategory = category ?? fileTypes[stepNumber] ?? '';
+    const stamp = Date.now();
+    const entries = Array.from(nextFiles).map((file, index) => ({
+      id: stamp + index,
+      name: file.name,
+      category: selectedCategory || 'Sem tipologia',
     }));
+    setFiles((current) => ({
+      ...current, [stepNumber]: [...(current[stepNumber] ?? []), ...entries],
+    }));
+  }
+  function removeFile(stepNumber: Step, id: number) {
+    if (!window.confirm('Excluir este arquivo da etapa?')) return;
+    setFiles((current) => ({
+      ...current,
+      [stepNumber]: (current[stepNumber] ?? []).filter((file) => file.id !== id),
+    }));
+  }
+  function reviewImported(stepNumber: Step, field: string, originalValue: string,
+    reviewedValue: string) {
+    const key = `${stepNumber}:${field}`;
+    setImportedReviews((current) => {
+      const next = { ...current, [key]: reviewedValue };
+      if (field === 'O imóvel integra loteamento?' && reviewedValue &&
+        reviewedValue !== 'Sim') {
+        delete next['3:Loteamento, quadra e lote'];
+        delete next['3:Documento SEI da planta do loteamento'];
+      }
+      return next;
+    });
+    setDivergences((current) => {
+      let withoutAutomatic = current.filter((item) =>
+        !(item.automatic && item.step === stepNumber && item.field === field));
+      if (field === 'O imóvel integra loteamento?' && reviewedValue &&
+        reviewedValue !== 'Sim') {
+        withoutAutomatic = withoutAutomatic.filter((item) => !(item.automatic &&
+          item.step === 3 && ['Loteamento, quadra e lote',
+            'Documento SEI da planta do loteamento'].includes(item.field)));
+      }
+      if (!reviewedValue.trim() || reviewedValue.trim() === originalValue) {
+        return withoutAutomatic;
+      }
+      return [...withoutAutomatic, {
+        id: Date.now(), step: stepNumber, field, value: reviewedValue.trim(),
+        originalValue, automatic: true,
+      }];
+    });
+  }
+  function setOccurrenceGate(kind: 'interference' | 'affectation', value: string) {
+    const catalog = kind === 'interference' ? interferences : affectations;
+    const hasSelected = occurrences.some((item) => catalog.includes(item));
+    if (value === 'Não' && hasSelected &&
+      !window.confirm('Alterar para Não removerá as ocorrências selecionadas. Continuar?')) return;
+    if (value === 'Não') {
+      setOccurrences((current) => current.filter((item) => !catalog.includes(item)));
+    }
+    if (kind === 'interference') setHasInterferences(value);
+    else setHasAffectations(value);
+  }
+  function setTechnicalDocument(key: string, category: string, value: string) {
+    const categoryFiles = (files[3] ?? []).filter((file) => file.category === category);
+    if (value === 'Não' && categoryFiles.length &&
+      !window.confirm('Alterar para Não removerá os arquivos anexados. Continuar?')) return;
+    if (value === 'Não') {
+      setFiles((current) => ({
+        ...current,
+        3: (current[3] ?? []).filter((file) => file.category !== category),
+      }));
+    }
+    setTechnicalDocuments((current) => ({ ...current, [key]: value }));
   }
   function captureStepData(stepNumber: Step) {
     const values: Record<string, string> = {};
@@ -279,8 +375,7 @@ export default function Home() {
     setCapturedFields((current) => ({ ...current, [stepNumber]: values }));
   }
   function back() {
-    if (stage === 'origin') setStage('regime');
-    else if (stage === 'search') setStage('origin');
+    if (stage === 'search') setStage('origin');
     else if (stage === 'result') setStage('search');
     else if (stage === 'view') setStage('done');
     else if (stage === 'done') { setStage('steps'); setStep(6); }
@@ -292,52 +387,6 @@ export default function Home() {
     if (step < 6) setStep((step + 1) as Step);
     else setStage('done');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function RegimeScreen() {
-    return <><div className="compact-page-heading"><h1>Regime de destinação</h1>
-      <p>Selecione a modalidade específica que orientará este diagnóstico.</p></div>
-      <section className="form-card compact-card">
-        <SectionTitle title="Qual é o regime de destinação a ser aplicado ao imóvel?" />
-        <div className="regime-combobox">
-          <input className="regime-search" role="combobox" aria-autocomplete="list"
-            aria-expanded={regimeOpen} aria-controls="regime-options" value={query}
-            onFocus={() => {
-              if (query === regime) setQuery('');
-              setRegimeOpen(true);
-            }}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setRegime('');
-              setRegimeOpen(true);
-            }}
-            onBlur={() => window.setTimeout(() => {
-              setRegimeOpen(false);
-              if (regime) setQuery(regime);
-            }, 120)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                setRegimeOpen(false);
-                if (regime) setQuery(regime);
-              }
-            }}
-            placeholder="Digite para pesquisar ou selecionar" />
-          {regimeOpen && <div id="regime-options" className="regime-list floating"
-            role="listbox">
-            {filteredRegimes.length ? filteredRegimes.map((item) =>
-              <button type="button" role="option" aria-selected={regime === item}
-                key={item} className={regime === item ? 'selected' : ''}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  setRegime(item);
-                  setQuery(item);
-                  setRegimeOpen(false);
-                }}>{item}</button>) :
-              <p className="regime-empty">Nenhum regime encontrado.</p>}
-          </div>}
-        </div>
-      </section><Footer onSave={save} onNext={() => setStage('origin')}
-        disabled={!regime} /></>;
   }
 
   function OriginScreen() {
@@ -353,7 +402,7 @@ export default function Home() {
               onChange={() => setOrigin(id as Origin)} /><span className="radio-dot" />
             <span><strong>{title}</strong><small>{description}</small></span>
           </label>)}</div>
-      </section><Footer onBack={back} onSave={save}
+      </section><Footer onSave={save}
         onNext={() => { setStep(1); setStage(imported ? 'search' : 'steps'); }} /></>;
   }
 
@@ -380,7 +429,6 @@ export default function Home() {
         <div className="property-summary">
           <div><small>RIP</small><strong>{rip}</strong></div>
           <div><small>Imóvel</small><strong>Terreno da União — Centro Administrativo</strong></div>
-          <div><small>Matrícula</small><strong>45.678</strong></div>
           <div><small>Área cadastrada</small><strong>1.250,00 m²</strong></div>
         </div>
         <div className="result-location-layout"><div className="location-details">
@@ -400,31 +448,15 @@ export default function Home() {
       </section></>;
   }
 
-  function StepTail({ number, divergenceFields }: {
-    number: Step; divergenceFields?: string[];
-  }) {
-    return <>{imported && divergenceFields && <Subsection title="Divergências desta etapa">
-      <p className="field-help">Registre o campo e o valor apurado sem alterar o dado cadastral.</p>
-      <div className="divergence-entry"><select value={draftField}
-        onChange={(event) => setDraftField(event.target.value)}>
-        <option value="">Selecione o campo</option>
-        {divergenceFields.map((field) => <option key={field}>{field}</option>)}
-      </select><input value={draftValue} onChange={(event) => setDraftValue(event.target.value)}
-        placeholder="Valor apurado" /><button className="button secondary compact"
-        onClick={() => {
-          if (!draftField || !draftValue) return notify('Informe o campo e o valor apurado.');
-          setDivergences((current) => [...current,
-            { step: number, field: draftField, value: draftValue }]);
-          setDraftField(''); setDraftValue('');
-        }}>Adicionar</button></div>
-      {divergences.filter((item) => item.step === number).map((item, index) =>
-        <div className="divergence-chip" key={`${item.field}-${index}`}>
-          <strong>{item.field}</strong><span>{item.value}</span></div>)}
-    </Subsection>}
-      <Attachment id={`attachment-${number}`} category={fileTypes[number] ?? ''}
-        files={files[number]} onCategory={(value) =>
+  function StepTail({ number }: { number: Step }) {
+    return <><Attachment id={`attachment-${number}`} category={fileTypes[number] ?? ''}
+        files={number === 3 ? (files[number] ?? []).filter((file) =>
+          !['Planta do loteamento', 'Planta (PDF)', 'Arquivo vetorial',
+            'Memorial descritivo'].includes(file.category)) : files[number]}
+        onCategory={(value) =>
           setFileTypes((current) => ({ ...current, [number]: value }))}
-        onFiles={(selected) => attach(number, selected)} />
+        onFiles={(selected) => attach(number, selected)}
+        onRemove={(id) => removeFile(number, id)} />
       <Subsection title="Informações complementares">
         <textarea className="general-notes" value={observations[number] ?? ''}
           onChange={(event) => setObservations((current) =>
@@ -434,32 +466,37 @@ export default function Home() {
     </>;
   }
 
+  function importedDataField(stepNumber: Step, label: string, importedValue: string,
+    options?: string[]) {
+    return <ImportedReviewField label={label} importedValue={importedValue}
+      reviewedValue={importedReviews[`${stepNumber}:${label}`] ?? ''} options={options}
+      onReview={(value) => reviewImported(stepNumber, label, importedValue, value)} />;
+  }
+
   function StepOne() {
-    const fields = ['CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro',
-      'Município / UF', 'Coordenadas', 'Tipo de imóvel', 'Natureza',
-      'Conceituação', 'Classificação', 'Área do terreno', 'Área construída'];
     return <><StepTitle step={1} /><section className="form-card">
       <SectionTitle title="Identificação e localização"
         description={imported ? 'Confira os dados recebidos do cadastro.' :
           'Preencha os dados do imóvel e sua localização.'} />
       <div className="fields-grid"><Field label="Processo SEI do imóvel"
         placeholder="00000.000000/0000-00" /></div>
-      {imported ? <div className="fields-grid imported-grid">
-        <ImportedField label="CEP" value="70040-010" />
-        <ImportedField label="Logradouro" value="Esplanada dos Ministérios" />
-        <ImportedField label="Número" value="Bloco K" />
-        <ImportedField label="Complemento" value="Edifício-sede" />
-        <ImportedField label="Bairro" value="Zona Cívico-Administrativa" />
-        <ImportedField label="Município / UF" value="Brasília / DF" />
-        <ImportedField label="Coordenadas — SIRGAS 2000"
-          value={'15°47\'23.5"S, 47°51\'42.1"W'} />
-        <ImportedField label="Tipo de imóvel" value="Lote/Terreno" />
-        <ImportedField label="Natureza" value="Urbano" />
-        <ImportedField label="Conceituação" value="Terreno de Marinha/acrescido" />
-        <ImportedField label="Classificação" value="Dominial" />
-        <ImportedField label="Área do terreno" value="1.250,00 m²" />
-        <ImportedField label="Área construída" value="320,00 m²" />
-      </div> : <><Choice label="O imóvel possui referência em outro sistema?"
+      {imported ? <><ImportedSource system={system} />
+        <div className="fields-grid imported-grid">
+        {importedDataField(1, 'CEP', '70040-010')}
+        {importedDataField(1, 'Logradouro', 'Esplanada dos Ministérios')}
+        {importedDataField(1, 'Número', 'Bloco K')}
+        {importedDataField(1, 'Complemento', 'Edifício-sede')}
+        {importedDataField(1, 'Bairro', 'Zona Cívico-Administrativa')}
+        {importedDataField(1, 'Município / UF', 'Brasília / DF')}
+        {importedDataField(1, 'Coordenadas — SIRGAS 2000',
+          '15°47\'23.5"S, 47°51\'42.1"W')}
+        {importedDataField(1, 'Tipo de imóvel', 'Lote/Terreno')}
+        {importedDataField(1, 'Natureza', 'Urbano')}
+        {importedDataField(1, 'Conceituação', 'Terreno de Marinha/acrescido')}
+        {importedDataField(1, 'Classificação', 'Dominial')}
+        {importedDataField(1, 'Área do terreno', '1.250,00 m²')}
+        {importedDataField(1, 'Área construída', '320,00 m²')}
+      </div></> : <><Choice label="O imóvel possui referência em outro sistema?"
         name="reference" options={['Nenhum', 'CIDI', 'SARP']} value={manualReference}
         onChange={setManualReference} />
         {manualReference === 'CIDI' && <Field label="Número do NBP (se conhecido)" />}
@@ -476,7 +513,8 @@ export default function Home() {
           {(propertyType === 'Lote/Terreno' || propertyType === 'Gleba') &&
             <Choice label="O imóvel possui edificação?" name="building"
               options={['Sim', 'Não']} />}
-          <Choice label="Natureza" name="nature" options={['Urbano', 'Rural']} />
+          <Choice label="Natureza" name="nature" value={nature}
+            onChange={setNature} options={['Urbano', 'Rural']} />
           <Choice label="Conceituação" name="concept" options={[
             'Terreno de Marinha/acrescido', 'Marginal/acrescido', 'Nacional interior',
             'Ilha costeira', 'Ilha fluvial', 'Praia', 'Mar territorial',
@@ -486,33 +524,27 @@ export default function Home() {
           <div className="fields-grid"><Field label="Área do terreno" />
             <Field label="Área construída" /></div>
         </Subsection></>}
-      <MapMock />{StepTail({ number: 1, divergenceFields: fields })}
+      <MapMock />{StepTail({ number: 1 })}
     </section></>;
   }
 
   function StepTwo() {
     const hasRecord = registry === 'Matrícula' || registry === 'Transcrição';
-    const fields = ['Registro cartorial', 'Matrícula ou transcrição', 'Titularidade',
-      'Área do terreno no registro', 'Área construída averbada', 'Forma de incorporação'];
     return <><StepTitle step={2} /><section className="form-card">
       <SectionTitle title="Situação cartorial e dominial"
         description="Reúna os dados do registro e da incorporação do imóvel." />
       <Subsection title="Situação cartorial">{imported ?
-        <><div className="fields-grid imported-grid">
-          <ImportedField label="Registro cartorial" value="Matrícula" />
-          <ImportedField label="Matrícula — número, cartório e data"
-            value="45.678 — 1º Ofício de Registro de Imóveis — 12/03/1998" />
-          <ImportedField label="Matrícula individualizada" value="Sim" />
-          <ImportedField label="Titularidade" value="União" />
-          <ImportedField label="Circunscrições atuais e anteriores"
-            value="1º Ofício de Registro de Imóveis de Brasília/DF" />
-          <ImportedField label="Área do terreno no registro" value="1.250,00 m²" />
-          <ImportedField label="Área construída averbada" value="320,00 m²" />
-        </div><div className="area-comparison"><strong>Comparação de áreas</strong>
-          <span>Cadastro: 1.250,00 m²</span><span>Registro: 1.250,00 m²</span>
-          <em>Sem diferença identificada</em></div>
-          <Field label="Outros registros relacionados" area
-            placeholder="Informe matrículas ou transcrições anteriores, originárias ou relacionadas." />
+        <><ImportedSource system={system} /><div className="fields-grid imported-grid">
+          {importedDataField(2, 'Registro cartorial', 'Matrícula')}
+          {importedDataField(2, 'Matrícula — número, cartório e data',
+            '45.678 — 1º Ofício de Registro de Imóveis — 12/03/1998')}
+          {importedDataField(2, 'Matrícula individualizada', 'Sim', ['Sim', 'Não'])}
+          {importedDataField(2, 'Titularidade', 'União')}
+          {importedDataField(2, 'Circunscrições atuais e anteriores',
+            '1º Ofício de Registro de Imóveis de Brasília/DF')}
+          {importedDataField(2, 'Área do terreno no registro', '1.250,00 m²')}
+          {importedDataField(2, 'Área construída averbada', '320,00 m²')}
+        </div>
         </> : <><Choice label="Registro cartorial" name="registry" value={registry}
           onChange={setRegistry} options={['Matrícula', 'Transcrição',
             'Registro cartorial inexistente', 'Registro cartorial não identificado']} />
@@ -523,7 +555,9 @@ export default function Home() {
             <Choice label="Registro individualizado?" name="individual"
               options={['Sim', 'Não']} />
             <Choice label="Titularidade constante do registro" name="ownership"
-              options={['União', 'Outros']} />
+              value={ownership} onChange={setOwnership} options={['União', 'Outros']} />
+            {ownership === 'Outros' && <Field label="Titular constante do registro"
+              required placeholder="Informe o nome do titular" />}
             <Field label="Circunscrições atuais e anteriores" />
             <div className="fields-grid"><Field label="Área do terreno constante do registro" />
               <Field label="Área construída averbada no registro" /></div>
@@ -534,13 +568,13 @@ export default function Home() {
               placeholder="Somente números" /></div>}
           {registry === 'Registro cartorial não identificado' &&
             <p className="warning-note">Registre as diligências realizadas nas informações complementares.</p>}
-          <Field label="Outros registros relacionados" area
-            placeholder="Informe a cadeia cartorial conhecida." />
         </>}</Subsection>
       <Subsection title="Situação dominial">{imported ?
-        <div className="fields-grid imported-grid">
-          <ImportedField label="Forma de incorporação" value="Originalmente da União" />
-        </div> : <><Choice label="Forma de incorporação" name="incorporation"
+        <><div className="fields-grid imported-grid">
+          {importedDataField(2, 'Forma de incorporação', 'Originalmente da União')}
+        </div><p className="warning-note incorporation-warning">
+          Verifique se “Originalmente da União” é a forma de incorporação correta para este imóvel.
+        </p></> : <><Choice label="Forma de incorporação" name="incorporation"
           value={incorporation} onChange={setIncorporation}
           options={['Imóveis de terceiros', 'Originalmente da União', 'Por aquisição',
             'Por fracionamento/parcelamento', 'Por fusão/unificação']} />
@@ -548,24 +582,41 @@ export default function Home() {
             name="acquisition" options={['Compra', 'Doação', 'Desapropriação',
               'Permuta', 'RAV', 'Sucessão', 'Usucapião', 'Outro']} />}
         </>}</Subsection>
-      {StepTail({ number: 2, divergenceFields: fields })}
+      {StepTail({ number: 2 })}
     </section></>;
   }
 
   function StepThree() {
     const constitutional = imported || incorporation === 'Originalmente da União';
-    const fields = ['Loteamento', 'Planta do loteamento',
-      'Demarcação', 'Identificação direta', 'Memorial descritivo'];
+    const effectiveSubdivision = imported ?
+      (importedReviews['3:O imóvel integra loteamento?'] || 'Sim') : subdivision;
+    const effectiveNature = imported ? 'Urbano' : nature;
+    const subdivisionFiles = (files[3] ?? []).filter((file) =>
+      file.category === 'Planta do loteamento');
+    const technicalFile = (category: string) => (files[3] ?? []).filter((file) =>
+      file.category === category);
     return <><StepTitle step={3} /><section className="form-card">
       <SectionTitle title="Situação urbanística e caracterização"
         description="Registre o contexto urbanístico e as peças técnicas do imóvel." />
       <Subsection title="Situação urbanística">{imported ?
-        <div className="fields-grid imported-grid">
-          <ImportedField label="O imóvel integra loteamento?" value="Sim" />
-          <ImportedField label="Loteamento, quadra e lote"
-            value="Plano Piloto — Quadra institucional — Lote K" />
-          <ImportedField label="Documento SEI da planta do loteamento" value="62675859" />
-        </div> : <><Choice label="O imóvel integra loteamento?" name="subdivision"
+        <><ImportedSource system={system} /><div className="fields-grid imported-grid">
+          <ImportedReviewField label="O imóvel integra loteamento?" importedValue="Sim"
+            reviewedValue={importedReviews['3:O imóvel integra loteamento?'] ?? ''}
+            options={['Sim', 'Não', 'Sem informação']} onReview={(value) =>
+              reviewImported(3, 'O imóvel integra loteamento?', 'Sim', value)} />
+          {effectiveSubdivision === 'Sim' && <>
+            <ImportedReviewField label="Loteamento, quadra e lote"
+              importedValue="Plano Piloto — Quadra institucional — Lote K"
+              reviewedValue={importedReviews['3:Loteamento, quadra e lote'] ?? ''}
+              onReview={(value) => reviewImported(3, 'Loteamento, quadra e lote',
+                'Plano Piloto — Quadra institucional — Lote K', value)} />
+            <ImportedReviewField label="Documento SEI da planta do loteamento"
+              importedValue="62675859"
+              reviewedValue={importedReviews['3:Documento SEI da planta do loteamento'] ?? ''}
+              onReview={(value) => reviewImported(3,
+                'Documento SEI da planta do loteamento', '62675859', value)} />
+          </>}
+        </div></> : <><Choice label="O imóvel integra loteamento?" name="subdivision"
           value={subdivision} onChange={setSubdivision}
           options={['Sim', 'Não', 'Sem informação']} />
           {subdivision === 'Sim' && <div className="conditional-panel">
@@ -575,6 +626,24 @@ export default function Home() {
                 placeholder="Somente números" /></div>
           </div>}
         </>}
+        {effectiveNature === 'Urbano' && <Field label="Inscrição municipal" />}
+        {effectiveNature === 'Rural' && <Field label="CCIR" />}
+        {!effectiveNature && <p className="warning-note">Informe a natureza do imóvel na etapa 1 para definir se este campo será Inscrição municipal ou CCIR.</p>}
+        {effectiveSubdivision === 'Sim' && <div className="conditional-panel subdivision-document">
+          <h4>Planta do loteamento</h4><p>Anexe o arquivo ou informe o endereço eletrônico.</p>
+          <div className="specific-upload"><div><strong>Planta do loteamento</strong>
+            <small>Arquivo correspondente à planta.</small></div>
+            <label className="file-button" htmlFor="subdivision-plan">Selecionar arquivo</label>
+            <input className="hidden-file" id="subdivision-plan" type="file"
+              onChange={(event) => attach(3, event.target.files, 'Planta do loteamento')} />
+            {subdivisionFiles.length > 0 && <ul className="file-list full-row">
+              {subdivisionFiles.map((file) => <li key={file.id}><span>
+                <strong>{file.category}</strong><small>{file.name}</small></span>
+                <button type="button" className="danger-link"
+                  onClick={() => removeFile(3, file.id)}>Excluir</button></li>)}</ul>}
+          </div>
+          <Field label="Link da planta do loteamento" placeholder="https://" />
+        </div>}
         <Field label="Zoneamento municipal" area
           placeholder="Descreva o zoneamento, os usos permitidos e eventuais restrições." />
       </Subsection>
@@ -583,46 +652,62 @@ export default function Home() {
           <p className="context-note">Exibido porque a forma de incorporação informada na etapa 2 é “Originalmente da União”.</p>
           <Choice label="Situação da demarcação" name="demarcation" value={demarcation}
             onChange={setDemarcation} options={['Concluída', 'LPM/LMEO posicionada',
-              'Iniciada', 'Não iniciada']} />
+              'Iniciada', 'Não iniciada', 'Não se aplica']} />
           {demarcation === 'Iniciada' && <Field label="Estágio da demarcação" />}
           <Choice label="Identificação direta" name="direct"
             options={['Concluída', 'Iniciada', 'Não iniciada']} />
           <Field label="Demandas judiciais, recursos e outros registros" area />
         </div>}
-        <div className="technical-doc-grid">
-          <label className="technical-document"><strong>Planta do imóvel — PDF</strong>
-            <input type="file" accept=".pdf" /></label>
-          <label className="technical-document"><strong>Arquivo vetorial</strong>
-            <input type="file" accept=".zip,.kml,.kmz,.shp,.geojson" /></label>
+        <div className="document-questions">
+          <SpecificDocument name="has-property-plan" label="Há planta do imóvel?"
+            category="Planta (PDF)" answer={technicalDocuments.plan ?? ''}
+            files={technicalFile('Planta (PDF)')} accept=".pdf"
+            onAnswer={(value) => setTechnicalDocument('plan', 'Planta (PDF)', value)}
+            onFiles={(selected) => attach(3, selected, 'Planta (PDF)')}
+            onRemove={(id) => removeFile(3, id)} />
+          <SpecificDocument name="has-vector-file" label="Há arquivo vetorial?"
+            category="Arquivo vetorial" answer={technicalDocuments.vector ?? ''}
+            files={technicalFile('Arquivo vetorial')}
+            accept=".zip,.kml,.kmz,.shp,.geojson"
+            onAnswer={(value) => setTechnicalDocument('vector', 'Arquivo vetorial', value)}
+            onFiles={(selected) => attach(3, selected, 'Arquivo vetorial')}
+            onRemove={(id) => removeFile(3, id)} />
+          <SpecificDocument name="has-memorial" label="Há memorial descritivo?"
+            category="Memorial descritivo" answer={technicalDocuments.memorial ?? ''}
+            files={technicalFile('Memorial descritivo')}
+            onAnswer={(value) => setTechnicalDocument('memorial',
+              'Memorial descritivo', value)}
+            onFiles={(selected) => attach(3, selected, 'Memorial descritivo')}
+            onRemove={(id) => removeFile(3, id)} />
         </div>
-        <Field label="Memorial descritivo" area
-          placeholder="Descreva o memorial ou indique o documento correspondente." />
-      </Subsection>{StepTail({ number: 3, divergenceFields: fields })}
+      </Subsection>{StepTail({ number: 3 })}
     </section></>;
   }
 
   function StepFour() {
     return <><StepTitle step={4} /><section className="form-card">
       <SectionTitle title="Interferências e afetações"
-        description="Registre cada ocorrência e o resultado da análise realizada." />
-      <Subsection title="Interferências"><Checks items={interferences}
-        selected={occurrences} onChange={(item) =>
-          toggle(item, occurrences, setOccurrences)} /></Subsection>
-      <Subsection title="Afetações"><Checks items={affectations}
-        selected={occurrences} onChange={(item) =>
-          toggle(item, occurrences, setOccurrences)} />
-        {occurrences.includes('Unidade de conservação') &&
-          <Field label="Tipo de unidade de conservação" />}
-        {occurrences.includes('Patrimônio histórico tombado') &&
-          <Field label="Tipo de tombamento" />}
-        {occurrences.includes('Outra afetação') &&
-          <Field label="Especificação da outra afetação" area />}
-      </Subsection>
-      <Subsection title="Análise"><Choice label="Resultado da verificação"
-        name="analysis" options={['Não se aplica', 'Não identificada',
-          'Identificada — sem impedimento', 'Identificada — requer providência',
-          'Análise pendente']} />
-        <Field label="Detalhamento das ocorrências e fontes consultadas" area />
+        description="Informe se foram identificadas interferências ou afetações." />
+      <Subsection title="Interferências"><Choice label="Há interferências?"
+        name="has-interferences" value={hasInterferences}
+        onChange={(value) => setOccurrenceGate('interference', value)}
+        options={['Sim', 'Não']} />
+        {hasInterferences === 'Sim' && <Checks items={interferences}
+          selected={occurrences} onChange={(item) =>
+            toggle(item, occurrences, setOccurrences)} />}</Subsection>
+      <Subsection title="Afetações"><Choice label="Há afetações?"
+        name="has-affectations" value={hasAffectations}
+        onChange={(value) => setOccurrenceGate('affectation', value)}
+        options={['Sim', 'Não']} />
+        {hasAffectations === 'Sim' && <><Checks items={affectations}
+          selected={occurrences} onChange={(item) =>
+            toggle(item, occurrences, setOccurrences)} />
+          {occurrences.includes('Unidade de conservação') &&
+            <Field label="Tipo de unidade de conservação" />}
+          {occurrences.includes('Patrimônio histórico tombado') &&
+            <Field label="Tipo de tombamento" />}
+          {occurrences.includes('Outra afetação') &&
+            <Field label="Especificação da outra afetação" area />}</>}
       </Subsection>{StepTail({ number: 4 })}
     </section></>;
   }
@@ -656,8 +741,11 @@ export default function Home() {
         <thead><tr><th>Providência</th><th>Detalhamento</th><th>Ações</th></tr></thead>
         <tbody>{forwardings.length ? forwardings.map((item) => <tr key={item.id}>
           <td>{item.type}</td><td>{item.detail}</td><td><button type="button"
-            onClick={() => setForwardings((current) =>
-              current.filter((forwarding) => forwarding.id !== item.id))}>Excluir</button></td>
+            onClick={() => {
+              if (!window.confirm('Excluir esta providência?')) return;
+              setForwardings((current) =>
+                current.filter((forwarding) => forwarding.id !== item.id));
+            }}>Excluir</button></td>
         </tr>) : <tr><td colSpan={3} className="forwarding-empty">
           Nenhuma providência adicionada.</td></tr>}</tbody>
       </table></div>
@@ -666,10 +754,10 @@ export default function Home() {
   }
 
   function StepSix() {
-    const missing = [
-      'Etapa 1 — Processo SEI do imóvel não informado',
-      'Etapa 3 — Referência do memorial descritivo não informada',
-    ];
+    const missing = ['Etapa 1 — Processo SEI do imóvel não informado'];
+    if (!technicalDocuments.memorial) {
+      missing.push('Etapa 3 — Disponibilidade do memorial descritivo não informada');
+    }
     return <><StepTitle step={6} /><section className="form-card review-card">
       <SectionTitle title="Revisão e conclusão"
         description="Confira pendências, divergências e documentos antes de concluir." />
@@ -681,13 +769,13 @@ export default function Home() {
         <div className="review-issue missing" key={item}><span>Não informado</span>
           <strong>{item}</strong></div>)}</Subsection>
       <Subsection title="Divergências registradas">{divergences.length ?
-        divergences.map((item, index) => <div className="review-issue divergence"
-          key={`${item.field}-${index}`}><span>Etapa {item.step}</span>
-          <strong>{item.field}: {item.value}</strong></div>) :
+        divergences.map((item) => <div className="review-issue divergence"
+          key={item.id}><span>Etapa {item.step}</span>
+          <strong>{item.field}: {item.originalValue &&
+            `${item.originalValue} → `}{item.value}</strong></div>) :
         <p className="empty-state">Nenhuma divergência registrada.</p>}</Subsection>
       <Subsection title="Resumo">
         <div className="summary-list">
-          <div className="summary-row"><strong>Regime</strong><span>{regime}</span></div>
           <div className="summary-row"><strong>Origem</strong>
             <span>{imported ? `RIP ${rip} — ${system}` : 'Imóvel sem RIP'}</span></div>
           <div className="summary-row"><strong>Ocorrências</strong>
@@ -707,7 +795,8 @@ export default function Home() {
     return <section className="diagnostic-view"><div className="view-heading">
       <div><p className="eyebrow">Diagnóstico patrimonial</p>
         <h1>Terreno da União — Centro Administrativo</h1>
-        <p>{regime}</p></div><span className="success-badge">Concluído</span>
+        <p>{imported ? `RIP ${rip} — ${system}` : 'Imóvel sem RIP'}</p></div>
+        <span className="success-badge">Concluído</span>
       </div><div className="media-overview"><div className="photo-carousel">
         <div className="photo-placeholder">Fotos do imóvel</div>
         <div className="carousel-controls"><button>‹</button><span>1 / 3</span>
@@ -743,12 +832,15 @@ export default function Home() {
                 <p>Nenhuma providência registrada.</p>}
             </div>}
             {stepDivergences.length > 0 && <div className="diagnostic-view-block">
-              <strong>Divergências</strong><ul>{stepDivergences.map((item, itemIndex) =>
-                <li key={`${item.field}-${itemIndex}`}><b>{item.field}</b>
-                  <span>{item.value}</span></li>)}</ul>
+              <strong>Divergências</strong><ul>{stepDivergences.map((item) =>
+                <li key={item.id}><b>{item.field}</b>
+                  <span>{item.originalValue ?
+                    `Importado: ${item.originalValue} · Apurado: ${item.value}` : item.value}</span>
+                </li>)}</ul>
             </div>}
             <div className="diagnostic-view-block"><strong>Arquivos</strong>
-              <p>{stepFiles.length ? stepFiles.join('; ') : 'Nenhum arquivo anexado.'}</p>
+              <p>{stepFiles.length ? stepFiles.map((file) =>
+                `${file.category}: ${file.name}`).join('; ') : 'Nenhum arquivo anexado.'}</p>
             </div>
             <div className="diagnostic-view-block"><strong>Informações complementares</strong>
               <p>{observations[number] || 'Nenhuma informação complementar registrada.'}</p>
@@ -786,7 +878,6 @@ export default function Home() {
         </div></aside>
       <section className="content"><nav className="breadcrumb">
         Instrução de destinação <span>/</span> Diagnóstico do imóvel</nav>
-        {stage === 'regime' && RegimeScreen()}
         {stage === 'origin' && OriginScreen()}
         {stage === 'search' && SearchScreen()}
         {stage === 'result' && ResultScreen()}
@@ -800,7 +891,8 @@ export default function Home() {
             divergências, anexos e encaminhamentos.</p>
           <div className="completion-meta"><div><span>Registro</span>
             <strong>DPI-2026-0042</strong></div><div><span>Situação</span>
-            <strong>Concluído</strong></div></div>
+            <strong>Concluído</strong></div><div><span>Origem</span>
+            <strong>{imported ? system : 'Sem RIP'}</strong></div></div>
           <div className="inline-actions centered">
             <button className="button secondary" onClick={() => setStage('view')}>
               Visualizar diagnóstico</button>
