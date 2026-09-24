@@ -18,5 +18,11 @@ npm run dev
 
 ## Publicação
 
-O pacote estático validado fica em `docs/`. O GitHub Actions publica esse
-conteúdo automaticamente no GitHub Pages a cada atualização da branch `main`.
+Gere o pacote estático com os caminhos próprios do GitHub Pages:
+
+```bash
+npm run build:pages
+```
+
+O pacote validado fica em `docs/`. O GitHub Actions publica esse conteúdo
+automaticamente no GitHub Pages a cada atualização da branch `main`.
