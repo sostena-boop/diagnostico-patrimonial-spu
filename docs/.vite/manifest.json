@@ -1,44 +1,44 @@
 {
-  "_framework-BgSIrAUN.js": {
-    "file": "_next/static/chunks/framework-BgSIrAUN.js",
+  "_framework-DyQ2QY49.js": {
+    "file": "diagnostico-patrimonial-spu/_next/static/chunks/framework-DyQ2QY49.js",
     "name": "framework",
     "imports": [
-      "_rolldown-runtime-C60lm6uB.js"
+      "_rolldown-runtime-CDnaSJd4.js"
     ]
   },
-  "_rolldown-runtime-C60lm6uB.js": {
-    "file": "_next/static/chunks/rolldown-runtime-C60lm6uB.js",
+  "_rolldown-runtime-CDnaSJd4.js": {
+    "file": "diagnostico-patrimonial-spu/_next/static/chunks/rolldown-runtime-CDnaSJd4.js",
     "name": "rolldown-runtime"
   },
   "app/DiagnosisApp.tsx": {
-    "file": "_next/static/chunks/DiagnosisApp-B3MVx-6J.js",
+    "file": "diagnostico-patrimonial-spu/_next/static/chunks/DiagnosisApp-CCyWJulZ.js",
     "name": "DiagnosisApp",
     "src": "app/DiagnosisApp.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_rolldown-runtime-C60lm6uB.js",
-      "_framework-BgSIrAUN.js"
+      "_rolldown-runtime-CDnaSJd4.js",
+      "_framework-DyQ2QY49.js"
     ]
   },
   "node_modules/vinext/dist/shims/layout-segment-context.js": {
-    "file": "_next/static/chunks/layout-segment-context-BIpSP_vK.js",
+    "file": "diagnostico-patrimonial-spu/_next/static/chunks/layout-segment-context-DJmK7ALA.js",
     "name": "layout-segment-context",
     "src": "node_modules/vinext/dist/shims/layout-segment-context.js",
     "isDynamicEntry": true,
     "imports": [
-      "_rolldown-runtime-C60lm6uB.js",
+      "_rolldown-runtime-CDnaSJd4.js",
       "virtual:vinext-app-browser-entry",
-      "_framework-BgSIrAUN.js"
+      "_framework-DyQ2QY49.js"
     ]
   },
   "virtual:vinext-app-browser-entry": {
-    "file": "_next/static/chunks/index-CLCNYhUS.js",
+    "file": "diagnostico-patrimonial-spu/_next/static/chunks/index-aG-4SRTn.js",
     "name": "index",
     "src": "virtual:vinext-app-browser-entry",
     "isEntry": true,
     "imports": [
-      "_rolldown-runtime-C60lm6uB.js",
-      "_framework-BgSIrAUN.js"
+      "_rolldown-runtime-CDnaSJd4.js",
+      "_framework-DyQ2QY49.js"
     ],
     "dynamicImports": [
       "virtual:vinext-app-browser-entry",
