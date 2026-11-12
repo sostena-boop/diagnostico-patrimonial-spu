@@ -488,12 +488,13 @@ function etapa4() {
   ]));
   const restrInc = area() ? ['Zona/Área de Interesse Social (ZEIS)', 'Situado em área de segurança', 'Área non aedificandi',
     'Tombado como patrimônio histórico, artístico e/ou cultural'].filter((r) => val(4, r) === 'Sim').map(incide).join('') : '';
-  const usoComum = val(4, 'O imóvel é ou contém bem de uso comum?');
+  const usoComum = val(4, 'Há parte do imóvel que é bem de uso comum?'), todoComum = val(1, 'Classificação') === 'Uso comum';
   return bloco('Localização geográfica', '<p class="etapa-desc">O mesmo mapa da etapa 1, repetido aqui para apoiar a verificação de interferências e afetações.</p>' + mapa()) +
     restr.replace(/<\/section>$/, restrInc + '</section>') + bloco('Interferências', escolha(4, 'Há interferências?', ['Sim', 'Não']) + (hi === 'Sim' ? marcas(INTERFERENCIAS) : '')) +
-    bloco('Afetações', escolha(4, 'O imóvel é ou contém bem de uso comum?', ['Não', 'É bem de uso comum', 'Contém bem de uso comum em parte']) +
-      (usoComum === 'Contém bem de uso comum em parte' ? campo(4, 'Descrição da parte de uso comum', { area: true }) : '') +
-      (usoComum && usoComum !== 'Não' ? incide('Bem de uso comum') : '') + escolha(4, 'Há afetações?', ['Sim', 'Não']) + (ha === 'Sim' ? marcas(AFETACOES) +
+    bloco('Afetações', (todoComum ? '<p class="etapa-desc">O imóvel foi classificado como bem de uso comum na etapa 1 (Classificação), que vale para o imóvel inteiro.</p>' :
+      `<p class="etapa-desc">A Classificação da etapa 1 vale para o imóvel inteiro. Aqui se registra o caso em que só uma parte é de uso comum.</p>` +
+      escolha(4, 'Há parte do imóvel que é bem de uso comum?', ['Sim', 'Não']) +
+      (usoComum === 'Sim' ? campo(4, 'Descrição da parte de uso comum', { area: true }) + incide('Parte de uso comum') : '')) + escolha(4, 'Há afetações?', ['Sim', 'Não']) + (ha === 'Sim' ? marcas(AFETACOES) +
       (S.ocorr.includes('Unidade de conservação') ? campo(4, 'Tipo de unidade de conservação') : '') +
       (S.ocorr.includes('Patrimônio histórico tombado') ? escolha(4, 'Esfera do tombamento', ['Federal', 'Estadual', 'Municipal']) : '') +
       (S.ocorr.includes('Outra afetação') ? campo(4, 'Especificação da outra afetação', { area: true }) : '') : '')) + cauda(4);
@@ -537,7 +538,7 @@ function lacunas() {
     .forEach(([r, t]) => falta(!val(3, r), `Etapa 3 — Disponibilidade ${t} não informada`));
   falta(!val(4, 'Há interferências?'), 'Etapa 4 — Existência de interferências não informada');
   falta(!val(4, 'Há afetações?'), 'Etapa 4 — Existência de afetações não informada');
-  falta(!val(4, 'O imóvel é ou contém bem de uso comum?'), 'Etapa 4 — Bem de uso comum não informado');
+  falta(val(1, 'Classificação') !== 'Uso comum' && !val(4, 'Há parte do imóvel que é bem de uso comum?'), 'Etapa 4 — Parte de uso comum não informada');
   return l;
 }
 const podeConcluir = () => S.ciente && val(6, 'Nome completo').trim() && val(6, 'Cargo').trim();
