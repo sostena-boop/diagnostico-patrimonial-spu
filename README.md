@@ -9,20 +9,13 @@ anexos, interferências, providências e visualizar o diagnóstico concluído.
 **Acesso ao protótipo:**
 https://sostena-boop.github.io/diagnostico-patrimonial-spu/
 
-## Desenvolvimento local
+## Versão publicada
 
-```bash
-npm ci
-npm run dev
-```
+A partir de 12/11/2026 a página publicada é `diagnostico.html`, um arquivo HTML
+único, sem build, no layout do SPUnet. Para publicar uma alteração, copie-o para
+`docs/index.html` e envie para a branch `main`; o GitHub Actions publica o
+conteúdo de `docs/` no GitHub Pages.
 
-## Publicação
-
-Gere o pacote estático com os caminhos próprios do GitHub Pages:
-
-```bash
-npm run build:pages
-```
-
-O pacote validado fica em `docs/`. O GitHub Actions publica esse conteúdo
-automaticamente no GitHub Pages a cada atualização da branch `main`.
+O código React em `app/` é a versão anterior, mantida para consulta. **Não rode
+`npm run build:pages`**: ele recria `docs/` a partir da versão antiga e
+sobrescreve a página publicada.

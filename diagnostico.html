@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico do imóvel | SPUnet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --azul: #1351b4; --azul-escuro: #071d41; --azul-marinho: #0c326f; --azul-claro: #dbe8fb;
+  --azul-suave: #f0f5fd; --verde: #168821; --laranja: #e9571e; --vermelho: #e52207;
+  --amarelo-bg: #fff5c2; --texto: #1b1b1b; --suave: #555; --linha: #cccccc;
+  --cinza: #f8f8f8; --cinza-2: #ededed;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--texto); background: #fff; font: 400 15px/1.45 Rawline, Raleway, "Segoe UI", Arial, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3, h4, p { margin: 0; }
+
+/* Barra do protótipo (não faz parte do sistema) */
+.proto { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 7px 24px; background: #2b2b2b; color: #e6e6e6; font-size: 12px; }
+.proto b { color: #ffcd07; letter-spacing: .04em; }
+.proto .seg { display: inline-flex; border: 1px solid #666; border-radius: 4px; overflow: hidden; }
+.proto .seg button { border: 0; padding: 4px 10px; background: transparent; color: #ddd; cursor: pointer; }
+.proto .seg button.on { background: #ffcd07; color: #1b1b1b; font-weight: 600; }
+.proto .lk { margin-left: auto; border: 0; background: none; color: #bbb; text-decoration: underline; cursor: pointer; }
+
+/* Cabeçalho SPUnet */
+.topo { display: flex; align-items: center; gap: 18px; padding: 16px 40px; box-shadow: 0 1px 6px rgba(0,0,0,.16); position: relative; z-index: 1; }
+.menu { width: 18px; height: 14px; border: 0; padding: 0; cursor: pointer; background: linear-gradient(var(--azul) 0 0) top/100% 2px no-repeat, linear-gradient(var(--azul) 0 0) center/100% 2px no-repeat, linear-gradient(var(--azul) 0 0) bottom/100% 2px no-repeat; }
+.marca { display: flex; align-items: flex-end; gap: 3px; font-weight: 700; font-size: 24px; letter-spacing: -.02em; line-height: 1; }
+.marca span { font-weight: 400; }
+.marca i { display: inline-flex; align-items: flex-end; gap: 2px; margin-left: 2px; height: 30px; }
+.marca i u { width: 3px; border-radius: 2px; }
+.titulo-sis strong { display: block; font-size: 22px; font-weight: 400; line-height: 1.15; }
+.titulo-sis small { color: var(--suave); font-size: 13px; }
+.topo .dir { margin-left: auto; display: flex; align-items: center; gap: 18px; color: var(--azul); }
+.ico { width: 18px; height: 18px; border-radius: 50%; background: var(--azul); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.usuario { display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 999px; background: var(--cinza); color: var(--texto); font-size: 13px; }
+.usuario i { width: 36px; height: 36px; border-radius: 50%; background: #d4451c; color: #fff; display: grid; place-items: center; font-style: normal; font-weight: 600; font-size: 18px; }
+
+.pagina { max-width: 1280px; margin: 0 auto; padding: 22px 40px 56px; }
+.trilha { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--texto); }
+.trilha a { color: var(--azul); text-decoration: none; }
+.trilha .sep { color: #999; }
+.trilha .tempo { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 26px 0 14px; }
+h1 { font-size: 32px; font-weight: 300; line-height: 1.2; }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 3px; color: #fff; font-size: 12px; font-weight: 500; text-transform: uppercase; white-space: nowrap; }
+.tag.laranja { background: var(--laranja); } .tag.verde { background: var(--verde); } .tag.azul { background: var(--azul); }
+
+/* Passos do módulo (Requerimento · Imóvel · Caracterização · Destinação) */
+.passos { display: flex; list-style: none; margin: 8px 0 30px; padding: 0; }
+.passos li { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--azul); font-size: 15px; }
+.passos li:first-child { align-items: flex-start; flex: .5; } .passos li:last-child { align-items: flex-end; flex: .5; }
+.passos li::before { content: ''; position: absolute; top: 19px; left: 0; right: 0; height: 1px; background: #555; }
+.passos li:first-child::before { left: 20px; } .passos li:last-child::before { right: 20px; }
+.passos li span { position: relative; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--azul); background: #fff; display: grid; place-items: center; font-size: 20px; }
+.passos li.feito span { background: var(--azul-claro); }
+.passos li.atual span { background: var(--azul-marinho); border-color: var(--azul-marinho); color: #fff; }
+.passos li.atual { font-weight: 600; }
+
+/* Resumo (requerimento / imóvel) */
+.resumo h2 { font-size: 26px; font-weight: 400; margin-bottom: 12px; }
+.dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 32px; padding: 0 0 18px 48px; }
+.dados.raso { padding-left: 0; }
+.dados div b { display: block; font-size: 13px; font-weight: 600; }
+.dados div.larga { grid-column: 1 / -1; }
+
+/* Etapas do diagnóstico (abas) */
+.abas { display: flex; gap: 2px; margin: 10px 0 0; border-bottom: 1px solid var(--linha); overflow-x: auto; }
+.abas button { flex: 1 0 auto; display: flex; align-items: center; gap: 8px; padding: 12px 14px; border: 0; border-bottom: 4px solid transparent; background: none; color: var(--azul); cursor: pointer; font-size: 14px; white-space: nowrap; }
+.abas button:hover { background: var(--azul-suave); }
+.abas button i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--azul); display: grid; place-items: center; font-style: normal; font-size: 12px; }
+.abas button.feita i { background: var(--azul-claro); }
+.abas button.atual { border-bottom-color: var(--azul); font-weight: 600; }
+.abas button.atual i { background: var(--azul-marinho); border-color: var(--azul-marinho); color: #fff; }
+
+.etapa-titulo { margin: 28px 0 4px; font-size: 22px; font-weight: 400; }
+.etapa-desc { color: var(--suave); margin-bottom: 8px; }
+.bloco { border-top: 1px solid var(--linha); margin-top: 22px; padding-top: 16px; }
+.bloco > h3 { color: var(--azul-marinho); font-size: 17px; font-weight: 500; margin-bottom: 14px; }
+.bloco h4 { font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .02em; color: var(--suave); margin: 4px 0 12px; }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 24px; margin-bottom: 16px; }
+
+.campo { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.grade .campo { margin-bottom: 0; }
+.campo > label, .grupo > legend, .rot { font-size: 14px; font-weight: 600; padding: 0; }
+.obr { color: var(--vermelho); }
+input[type=text], select, textarea { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #888; border-radius: 6px; background: #fff; }
+textarea { height: auto; min-height: 96px; padding: 10px 12px; resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 3px dashed #c2850c; outline-offset: 2px; }
+input:disabled { background: var(--cinza-2); border-color: #bbb; color: #333; }
+.grupo { border: 0; margin: 0 0 16px; padding: 0; }
+.grupo .ops { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 6px; }
+.grupo .ops label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+input[type=radio], input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); margin: 0; }
+.marcas { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px 24px; margin-bottom: 16px; }
+.marcas label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.recuo { border-left: 4px solid var(--azul-claro); padding: 4px 0 1px 16px; margin: 0 0 16px; }
+
+/* Dado importado do cadastro */
+.origem { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 14px; background: var(--azul-suave); border-left: 4px solid var(--azul); font-size: 14px; }
+.grade { align-items: start; }
+.imp { background: var(--azul-suave); border-left: 4px solid var(--azul); border-radius: 0 6px 6px 0; padding: 8px 10px 10px; }
+.selo { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px; background: var(--azul); color: #fff; font-size: 11px; font-weight: 600; vertical-align: 1px; }
+.fonte { font: 11px/1.3 ui-monospace, Menlo, Consolas, monospace; color: var(--suave); overflow-wrap: anywhere; }
+.imp .linha { display: flex; gap: 8px; }
+.imp .linha input { flex: 1; min-width: 0; }
+.imp.div .linha input { text-decoration: line-through; color: #777; }
+.lk { border: 0; background: none; padding: 0; color: var(--azul); cursor: pointer; font-weight: 500; font-size: 13px; white-space: nowrap; }
+.lk:hover { text-decoration: underline; } .lk.perigo { color: var(--vermelho); }
+.apurado { margin-top: 6px; padding: 10px 12px; background: var(--amarelo-bg); border-radius: 6px; display: flex; flex-direction: column; gap: 6px; }
+.apurado label { font-size: 13px; font-weight: 600; }
+.apurado .acoes { display: flex; gap: 16px; }
+
+.aviso { display: flex; gap: 10px; padding: 10px 14px; margin: 0 0 16px; background: var(--amarelo-bg); border-left: 4px solid #ffcd07; font-size: 14px; }
+.vazio { color: var(--suave); font-style: italic; margin-bottom: 12px; }
+
+/* Anexos */
+.anexar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin-bottom: 12px; }
+.anexar .campo { flex: 1 1 260px; margin: 0; }
+.arquivos { list-style: none; margin: 0 0 14px; padding: 0 0 0 10px; border-left: 2px solid var(--linha); }
+.arquivos li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 4px 0; }
+.arquivos li a { color: var(--azul); } .arquivos li small { color: var(--suave); }
+.oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* Mapa simulado */
+.mapa { position: relative; height: 230px; border: 1px solid var(--linha); border-radius: 6px; overflow: hidden; background: linear-gradient(90deg, transparent 49%, #fff 49% 51%, transparent 51%) 0 0/120px 100%, linear-gradient(transparent 46%, #fff 46% 54%, transparent 54%) 0 0/100% 90px, #dfe9d8; }
+.mapa .area { position: absolute; left: 42%; top: 30%; width: 110px; height: 70px; border: 2px solid var(--azul); background: rgba(19,81,180,.18); transform: rotate(-6deg); }
+.mapa .pino { position: absolute; left: calc(42% + 46px); top: calc(30% + 22px); width: 16px; height: 16px; border-radius: 50%; background: var(--vermelho); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.mapa .barra { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
+.mapa .nota { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; background: rgba(255,255,255,.9); font-size: 12px; border-radius: 4px; }
+
+/* Botões */
+.bt { height: 40px; padding: 0 24px; border-radius: 999px; border: 1px solid var(--azul); background: #fff; color: var(--azul); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+.bt:hover { background: var(--azul-suave); }
+.bt.pri { background: var(--azul); color: #fff; } .bt.pri:hover { background: var(--azul-marinho); }
+.bt.liso { border-color: transparent; }
+.bt.peq { height: 32px; padding: 0 16px; font-size: 13px; }
+.bt:disabled { opacity: .45; cursor: not-allowed; }
+.rodape-acoes { display: flex; align-items: center; gap: 12px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--linha); }
+.rodape-acoes .espaco { flex: 1; }
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+th { text-align: left; padding: 12px; background: var(--cinza-2); color: var(--azul); font-weight: 600; font-size: 14px; }
+td { padding: 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+
+.opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 8px 0 4px; }
+.opcoes label { display: flex; gap: 12px; padding: 16px; border: 1px solid var(--linha); border-radius: 6px; cursor: pointer; }
+.opcoes label.on { border-color: var(--azul); background: var(--azul-suave); }
+.opcoes small { display: block; color: var(--suave); margin-top: 2px; }
+.busca { display: flex; gap: 12px; max-width: 560px; margin-bottom: 6px; }
+
+.item-rev { display: flex; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--cinza-2); }
+.item-rev .tag { font-size: 11px; }
+.tag.cinza { background: #636363; }
+.ciente { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; cursor: pointer; }
+
+.fim { text-align: center; padding: 34px 0 6px; }
+.fim .ok { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: var(--verde); color: #fff; font-size: 30px; display: grid; place-items: center; }
+.fim h2 { font-size: 26px; font-weight: 400; margin-bottom: 8px; }
+.fim p { color: var(--suave); max-width: 640px; margin: 0 auto 22px; }
+.fim .dados { text-align: left; max-width: 720px; margin: 0 auto 24px; padding: 16px 20px; background: var(--cinza); }
+.fim .acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+
+details.sec { border-bottom: 1px solid var(--linha); }
+details.sec:first-of-type { border-top: 1px solid var(--linha); margin-top: 20px; }
+details.sec summary { display: flex; align-items: center; gap: 12px; padding: 14px 0 14px 18px; cursor: pointer; color: var(--azul); font-size: 17px; list-style: none; }
+details.sec summary::-webkit-details-marker { display: none; }
+details.sec summary::before { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--azul); border-bottom: 2px solid var(--azul); transform: rotate(45deg); transition: transform .15s; }
+details.sec[open] summary::before { transform: rotate(-135deg); }
+details.sec summary small { margin-left: auto; color: var(--suave); font-size: 12px; }
+details.sec .corpo { padding: 4px 0 18px 48px; }
+details.sec .corpo .dados { padding-left: 0; }
+.midia { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
+.foto { height: 230px; border-radius: 6px; background: var(--cinza-2); display: grid; place-items: center; color: var(--suave); }
+
+.base { background: var(--azul-escuro); color: #fff; padding: 22px 40px; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 13px; }
+.base strong { font-size: 26px; letter-spacing: -.03em; }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 12px 20px; background: var(--azul-escuro); color: #fff; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.3); z-index: 9; }
+
+@media print { .proto, .topo, .trilha, .base, .rodape-acoes, .passos, .toast { display: none !important; } .pagina { padding: 0; } }
+@media (max-width: 760px) {
+  .topo, .base { padding-left: 16px; padding-right: 16px; } .pagina { padding: 16px 16px 40px; }
+  .titulo-sis small, .topo .ico { display: none; } h1 { font-size: 24px; } .usuario { font-size: 0; padding: 4px; gap: 0; }
+  .cab { flex-direction: column; align-items: flex-start; } .dados, details.sec .corpo { padding-left: 0; }
+  .passos li { font-size: 12px; } .midia { grid-template-columns: 1fr; }
+  .rodape-acoes { flex-wrap: wrap; } .imp .linha { flex-direction: column; align-items: flex-start; } .imp .linha input { flex: none; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* Protótipo funcional — dados simulados, estado guardado só neste navegador. */
+const CHAVE = 'diagnostico-imovel-spunet-v6';
+const ETAPAS = ['Dados do imóvel', 'Situação cartorial e dominial', 'Situação urbanística e caracterização',
+  'Interferências e afetações', 'Encaminhamentos', 'Revisão e conclusão'];
+const TIPOS_DOC = ['Planta (PDF)', 'Arquivo vetorial', 'Matrícula', 'Transcrição', 'Certidão cartorial',
+  'Certidão de inexistência de registro', 'Memorial descritivo', 'Relatório técnico',
+  'Despacho técnico conclusivo', 'Declaração ou ateste técnico', 'Documento judicial', 'Foto', 'Outros documentos'];
+const INTERFERENCIAS = ['Faixa de fronteira', 'Faixa de segurança', 'Raio de 1.320 m de estabelecimento militar',
+  'Faixa de 100 m da orla marítima', 'Faixa de domínio de ferrovia ou rodovia'];
+const AFETACOES = ['Unidade de conservação', 'Terra indígena', 'Comunidade tradicional', 'Território quilombola',
+  'Poligonal de porto organizado', 'PDISP', 'Área de regularização fundiária / REURB', 'Operacional RFFSA',
+  'Patrimônio histórico tombado', 'Outra afetação'];
+const PROVIDENCIAS = ['Realizar diligências internas ou externas', 'Elaborar ou ajustar peças técnicas',
+  'Elaborar análise técnica de incorporação', 'Solicitar complementação documental', 'Outra providência'];
+const TIPOS_IMOVEL = ['Gleba/Terreno/Lote com edificação', 'Gleba/Terreno/Lote sem edificação', 'Apartamento', 'Sala/Loja', 'Garagem', 'Espelho d\'água', 'Cavidade natural subterrânea'];
+const CONCEITUACOES = ['Terreno de Marinha/acrescido', 'Marginal/acrescido', 'Nacional interior', 'Ilha costeira', 'Ilha fluvial', 'Praia', 'Mar territorial', 'Água pública de domínio da União', 'Manguezal'];
+const AQUISICOES = ['Reversão', 'Compra', 'Dação em pagamento', 'Desapropriação amigável', 'Determinação judicial', 'Herança jacente', 'Permuta', 'Recebimento em Doação', 'Sucessão por Entidades da APF', 'Arrematação judicial', 'Registro por Apossamento Vintenário (RAV)', 'Usucapião', 'Expropriação (Lei 8.257/1991)', 'Encampação', 'Adjudicação', 'Desapropriação judicial', 'Indefinido'];
+const foraDoCadastro = (texto) => `<p class="etapa-desc">${texto || 'Estes dados não constam do cadastro do SPUnet e são informados no diagnóstico.'}</p>`;
+const DOCS_TECNICOS = ['Planta do loteamento', 'Planta (PDF)', 'Arquivo vetorial', 'Memorial descritivo'];
+const REQ = { numero: 'ES58746/2025', servico: 'Solicitar imóvel para uso da administração pública e entidades sem fins lucrativos',
+  abertura: '07/10/2025', nup: '19739.279516/2025-35' };
+const IMOVEL = { nome: 'Gleba/Terreno/Lote com edificação', area: '1.250,00 m²' };
+const LOC = [['CEP', '70040-010'], ['Logradouro', 'Esplanada dos Ministérios'], ['Número', 'Bloco K'],
+  ['Complemento', 'Edifício-sede'], ['Bairro', 'Zona Cívico-Administrativa'], ['Município / UF', 'Brasília / DF']];
+
+const inicial = () => ({ modo: 'modulo', tela: 'etapas', etapa: 1, origem: 'com', rip: '0000001.23456-78',
+  sistema: 'SPUnet', v: {}, rev: {}, ocorr: [], prov: [], comp: [], inc: {}, arq: {}, tipoArq: {}, ciente: false });
+let S = inicial();
+try { const g = JSON.parse(localStorage.getItem(CHAVE)); if (g && g.v) S = Object.assign(inicial(), g); } catch (e) {}
+const abertos = new Set();   // divergências com o painel aberto (não persiste)
+let VIS = null;              // coleta dos campos visíveis, usada na visualização final
+
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gravar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch (e) {} };
+const importado = () => S.origem === 'com';
+const area = () => S.origem === 'area';
+const semTxt = () => area() ? `Área — ${S.comp.length} componente(s)` : 'Imóvel sem RIP';
+const val = (etapa, rotulo) => S.v[etapa + ':' + rotulo] ?? '';
+const visto = (k, tipo) => { if (VIS) VIS.push({ k, tipo }); };
+function toast(texto) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = texto;
+  document.body.append(t); setTimeout(() => t.remove(), 2600);
+}
+
+/* ---------- componentes de formulário ---------- */
+function campo(etapa, rotulo, o = {}) {
+  const k = etapa + ':' + rotulo; visto(k, 'campo');
+  const attrs = `data-k="${esc(k)}" placeholder="${esc(o.ph || '')}"`;
+  return `<div class="campo"><label>${esc(rotulo)}${o.obr ? ' <span class="obr">*</span>' : ''}</label>${o.area ?
+    `<textarea ${attrs}>${esc(S.v[k])}</textarea>` : `<input type="text" ${attrs} value="${esc(S.v[k])}">`}</div>`;
+}
+function escolha(etapa, rotulo, opcoes) {
+  const k = etapa + ':' + rotulo; visto(k, 'campo');
+  return `<fieldset class="grupo"><legend>${esc(rotulo)}</legend><div class="ops">${opcoes.map((op) =>
+    `<label><input type="radio" name="${esc(k)}" data-k="${esc(k)}" value="${esc(op)}"${S.v[k] === op ? ' checked' : ''}>${esc(op)}</label>`).join('')}</div></fieldset>`;
+}
+function imp(etapa, rotulo, valor, opcoes, fonte) {
+  const k = etapa + ':' + rotulo;
+  const cab = `<label>${esc(rotulo)}<span class="selo">${esc(S.sistema)}</span></label>`;
+  const rodape = fonte ? `<span class="fonte">${esc(S.sistema)} · ${esc(fonte)}</span>` : '';
+  FONTE[k] = fonte || '';
+  if (valor === '') {   // veio vazio do cadastro: pode ser preenchido no diagnóstico
+    visto(k, 'campo'); delete IMP[k]; VAZIO[k] = true;
+    return `<div class="campo imp">${cab}${opcoes ? `<select data-k="${esc(k)}"><option value="">Vazio no ${esc(S.sistema)} — selecione, se apurado</option>${opcoes.map((op) =>
+      `<option${S.v[k] === op ? ' selected' : ''}>${esc(op)}</option>`).join('')}</select>` :
+      `<input type="text" data-k="${esc(k)}" value="${esc(S.v[k])}" placeholder="Vazio no ${esc(S.sistema)} — informe, se apurado">`}${rodape}</div>`;
+  }
+  visto(k, 'imp'); IMP[k] = valor; delete VAZIO[k];
+  const apurado = S.rev[k] || '', diverge = apurado && apurado !== valor;
+  const painel = (abertos.has(k) || diverge) ? `<div class="apurado"><label>Valor apurado no diagnóstico</label>${opcoes ?
+    `<select data-rev="${esc(k)}"><option value="">Selecione o valor apurado</option>${opcoes.map((op) =>
+      `<option${apurado === op ? ' selected' : ''}>${esc(op)}</option>`).join('')}</select>` :
+    `<input type="text" data-rev="${esc(k)}" value="${esc(apurado)}" placeholder="Informe o valor correto">`}
+    <div class="acoes"><button type="button" class="lk" data-a="fecharDiv" data-key="${esc(k)}">Fechar</button>
+    <button type="button" class="lk perigo" data-a="removerDiv" data-key="${esc(k)}">Remover divergência</button></div></div>` : '';
+  return `<div class="campo imp${diverge ? ' div' : ''}">${cab}<div class="linha">
+    <input type="text" value="${esc(valor)}" disabled>
+    <button type="button" class="lk" data-a="abrirDiv" data-key="${esc(k)}">${diverge ? 'Editar divergência' : 'Registrar divergência'}</button>
+    </div>${rodape}${painel}</div>`;
+}
+/* Monta um bloco a partir da lista de dados: o que o sistema de origem tem vem destacado;
+   o que ele não tem vira complementação manual (ou some, quando manual === false). */
+const siapa = () => importado() && S.sistema === 'SIAPA';
+function montar(etapa, lista) {
+  if (!importado()) {   // sem RIP: mesma estrutura do SPUnet, tudo informado no diagnóstico
+    let h = '', g = '';
+    const fecha = () => { if (g) { h += `<div class="grade">${g}</div>`; g = ''; } };
+    lista.forEach(([rotulo, f]) => {
+      if (!f.semRip && ('spunet' in f ? !f.spunet : Boolean(f.siapa))) return;
+      if (f.op) { fecha(); h += escolha(etapa, rotulo, f.op); } else g += campo(etapa, rotulo, f.o);
+    });
+    fecha(); return h;
+  }
+  let dest = '', campos = '', escolhas = '';
+  lista.forEach(([rotulo, f]) => {
+    const src = siapa() ? f.siapa : f.spunet;
+    if (src) dest += imp(etapa, rotulo, src[0], f.op, src[1]);
+    else if (f.manual === false) return;
+    else if (f.op) escolhas += escolha(etapa, rotulo, f.op);
+    else campos += campo(etapa, rotulo, f.o);
+  });
+  return (dest ? origemDados() + `<div class="grade">${dest}</div>` : '') +
+    (campos || escolhas ? `<h4>Complementação no diagnóstico</h4>${escolhas}${campos ? `<div class="grade">${campos}</div>` : ''}` : '');
+}
+const FUNDAMENTOS = ['Terreno/Acrescido de Marinha', 'Terreno/Acrescido marginal de rio navegável', 'Ilha fluvial ou lacustre em faixa de fronteira', 'Ilha oceânica ou costeira sem sede de município', 'Terra tradicionalmente ocupada pelos índios', 'Sítio arqueológico ou pré-histórico', 'Terras devolutas', 'Fortalezas, fortificações e construções militares', 'Terreno de extinto aldeamento de índios ou colônia militar', 'Domínio da Coroa', 'Várzea', 'Manguezal'];
+const SN = ['Sim', 'Não'];
+const FORMAS = ['Originalmente da União', 'Por Aquisição', 'Por Fracionamento/parcelamento', 'Por Fusão/Unificação', 'Imóveis de Terceiros'];
+const formaInc = () => !importado() ? val(2, 'Forma de incorporação') : siapa() ? val(2, 'Forma de incorporação') : (S.rev['2:Forma de incorporação'] || 'Originalmente da União');
+const originaria = () => formaInc() === 'Originalmente da União' || (siapa() && !formaInc());
+const IMP = {}, FONTE = {}, VAZIO = {};
+const origemDados = () => `<div class="origem"><span><strong>Dados importados do ${esc(S.sistema)}</strong> — os campos destacados vêm do cadastro; abaixo de cada um está o campo de origem.</span></div>`;
+const bloco = (titulo, conteudo) => `<section class="bloco"><h3>${esc(titulo)}</h3>${conteudo}</section>`;
+const aviso = (texto) => `<p class="aviso"><strong>!</strong><span>${esc(texto)}</span></p>`;
+function listaArquivos(etapa, filtro) {
+  const lista = (S.arq[etapa] || []).filter(filtro || (() => true));
+  return lista.length ? `<ul class="arquivos">${lista.map((f) => `<li><a href="#" onclick="return false">${esc(f.nome)}</a>
+    <small>${esc(f.cat)}</small><button type="button" class="lk perigo" data-a="removerArq" data-etapa="${etapa}" data-id="${f.id}">Excluir</button></li>`).join('')}</ul>` : '';
+}
+function mapa() {
+  return `<div class="mapa" role="img" aria-label="Mapa simulado"><span class="area"></span><span class="pino"></span>
+    <div class="barra"><button type="button" class="bt peq" data-a="nada">Marcar ponto</button>
+    <button type="button" class="bt peq" data-a="nada">Desenhar polígono</button></div>
+    <div class="nota">Mapa simulado — futura integração com serviço geográfico</div></div>`;
+}
+function cauda(etapa) {
+  const tipo = S.tipoArq[etapa] || '';
+  const filtro = etapa === 3 ? (f) => !DOCS_TECNICOS.includes(f.cat) : null;
+  const lista = listaArquivos(etapa, filtro);
+  return bloco('Arquivos da etapa', `<div class="anexar"><div class="campo"><label>Tipo de documento</label>
+      <select data-tipoarq="${etapa}"><option value="">Selecione a tipologia</option>${TIPOS_DOC.map((t) =>
+        `<option${tipo === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></div>
+      <label class="bt${tipo ? '' : ' desab'}" ${tipo ? '' : 'style="opacity:.45;cursor:not-allowed"'}>Selecionar arquivo
+        <input class="oculto" type="file" multiple data-arq="${etapa}"${tipo ? '' : ' disabled'}></label></div>
+      ${lista || '<p class="vazio">Nenhum arquivo anexado nesta etapa.</p>'}`) +
+    bloco('Informações complementares', campoObs(etapa));
+}
+function campoObs(etapa) {
+  const k = etapa + ':Informações complementares'; visto(k, 'obs');
+  return `<textarea data-k="${esc(k)}" aria-label="Informações complementares" placeholder="Registre informações faltantes, complementações e observações desta etapa.">${esc(S.v[k])}</textarea>`;
+}
+function docTecnico(rotulo, cat, aceita) {
+  const resp = val(3, rotulo);
+  return escolha(3, rotulo, ['Sim', 'Não']) + (resp === 'Sim' ? `<div class="recuo"><div class="anexar">
+    <span><strong>${esc(cat)}</strong><br><small>Selecione o arquivo correspondente.</small></span>
+    <label class="bt">Selecionar arquivo<input class="oculto" type="file" multiple data-arq="3" data-cat="${esc(cat)}"${aceita ? ` accept="${aceita}"` : ''}></label>
+    </div>${listaArquivos(3, (f) => f.cat === cat)}</div>` : '');
+}
+
+/* ---------- etapas ---------- */
+function etapa1() {
+  const L = (i, a, b, o) => [LOC[i][0], { spunet: [LOC[i][1], a], siapa: [LOC[i][1], b], o }];
+  const lista = [
+    ['Processo SEI do imóvel', { spunet: ['19739.101010/2024-11', 'imovel.numeroProcesso'], siapa: ['04905.003108/2011-82', 'Nro. Processo Cadastramento'], o: { ph: '00000.000000/0000-00' } }],
+    ['Denominação da área', { siapa: ['Setor Central', 'Denominação Área'], manual: false }],
+    L(0, 'imovel.enderecamento.cep', 'CEP', { ph: '00000-000', obr: true }), L(1, 'imovel.enderecamento.tipoLogradouro + logradouro', 'Tipo Logradouro + Nome Logradouro'),
+    L(2, 'imovel.numero', 'Número'), L(3, 'imovel.complemento', 'Complemento'), L(4, 'imovel.enderecamento.bairro', 'Bairro/Distrito'),
+    L(5, 'imovel.enderecamento.municipio + uf', 'Município + UF'),
+    ['Coordenadas — SIRGAS 2000', { spunet: ['15°47\'23.5"S, 47°51\'42.1"W', 'grauMinutoSegundo | grauDecimal | metricas'], siapa: ['E 193.842 · N 8.252.119 · Fuso 23 S', 'Coordenadas UTM'], o: { ph: 'Ponto na testada principal do imóvel' } }],
+    ['Situado em ilha', { siapa: ['Não', 'Situado em Ilha'], op: SN, manual: false }],
+    ...(siapa() && (S.rev['1:Situado em ilha'] || 'Não') === 'Sim' ? [['Tipo de ilha', { siapa: ['', 'Tipo de Ilha'], manual: false }], ['Nome da ilha', { siapa: ['', 'Nome da Ilha'], manual: false }]] : []),
+    ['Conceituação', { siapa: ['Terreno de Marinha/acrescido', 'Conceituação'], op: CONCEITUACOES, manual: false, semRip: true }],
+    ['Tipo de terreno', { siapa: ['Lote', 'Tipo de Terreno'], manual: false }],
+    ['Tipo de imóvel', { spunet: [IMOVEL.nome, 'imovel.tipoImovel'], op: TIPOS_IMOVEL }],
+    ['Natureza', { spunet: ['Urbano', 'imovel.naturezaImovel'], op: ['Urbano', 'Rural', 'Não se aplica'] }],
+    ['Área total do terreno', { spunet: ['1.250,00 m²', 'terreno.areaTotalCadastral'], siapa: ['1.250,00 m²', 'Área do Terreno Total'] }],
+    ['Área da União', { spunet: ['1.250,00 m²', 'terreno.areaUniaoCadastral'], siapa: ['1.250,00 m²', 'Área do Terreno da União'] }],
+    ['Área construída (soma das benfeitorias)', { spunet: ['320,00 m²', 'benfeitoria.areaConstruida'], siapa: ['320,00 m²', 'Benfeitoria · Área Construída'] }],
+    ['Classificação', { op: ['Dominial', 'Especial', 'Uso comum'] }],
+  ];
+  let h = '';
+  if (area()) return etapa1Area();
+  if (!importado()) {
+    const ref = val(1, 'O imóvel possui referência em outro sistema?');
+    h = `<p class="etapa-desc">Imóvel sem RIP: o cadastro será criado no SPUnet, e os campos seguem a estrutura do SPUnet Cadastro.</p>` +
+      escolha(1, 'O imóvel possui referência em outro sistema?', ['Nenhum', 'CIDI', 'SARP']) +
+      (ref === 'CIDI' ? campo(1, 'Número do NBP (se conhecido)') : '') + (ref === 'SARP' ? campo(1, 'Número do contrato (se conhecido)') : '');
+  }
+  return h + montar(1, lista) + bloco('Localização geográfica', mapa()) + cauda(1);
+}
+const TIPOS_COMP = ['Imóvel com RIP — inteiro', 'Imóvel com RIP — parte', 'Trecho sem RIP'];
+function tabelaComp(acoes) {
+  return `<table><thead><tr><th>Componente</th><th>RIP</th><th>Sistema</th><th>Área abrangida</th><th>Matrícula</th>${acoes ? '<th>Ações</th>' : ''}</tr></thead><tbody>${S.comp.length ?
+    S.comp.map((c) => `<tr><td>${esc(c.tipo)}</td><td>${esc(c.rip) || '—'}</td><td>${c.rip ? (c.rip.endsWith('9') ? 'SIAPA' : 'SPUnet') : '—'}</td>
+      <td>${esc(c.area) || 'Área cadastrada do imóvel'}</td><td>${esc(c.mat) || 'Não informada'}</td>
+      ${acoes ? `<td><button type="button" class="lk perigo" data-a="removerComp" data-id="${c.id}">Excluir</button></td>` : ''}</tr>`).join('') :
+    `<tr><td colspan="${acoes ? 6 : 5}" class="vazio">Nenhum componente adicionado.</td></tr>`}</tbody></table>`;
+}
+function etapa1Area() {
+  return `<p class="etapa-desc">Área: conjunto que não se reduz a uma unidade imobiliária. Pode reunir imóveis com RIP, partes de imóveis e trechos sem RIP. O diagnóstico é um só, para o conjunto.</p>
+    <div class="grade">${campo(1, 'Denominação da área', { obr: true, ph: 'Ex.: Faixa marginal da BR-101, km 12 a 18' })}${campo(1, 'Processo SEI', { ph: '00000.000000/0000-00' })}
+    ${campo(1, 'Município / UF', { ph: 'Pode haver mais de um' })}${campo(1, 'Área total', { ph: 'm² ou ha' })}${campo(1, 'Coordenadas de referência — SIRGAS 2000')}</div>
+    ${campo(1, 'Descrição e limites da área', { area: true })}` +
+    bloco('Composição da área', `<p class="etapa-desc">Adicione um componente de cada vez. Para parte de imóvel e trecho sem RIP, informe a área abrangida.</p>
+      <div class="anexar"><div class="campo"><label>Componente</label><select id="comp-tipo"><option value="">Selecione</option>${TIPOS_COMP.map((t) => `<option>${t}</option>`).join('')}</select></div>
+      <div class="campo"><label>RIP</label><input type="text" id="comp-rip" placeholder="Se houver"></div>
+      <div class="campo"><label>Área abrangida</label><input type="text" id="comp-area" placeholder="m² ou ha"></div>
+      <div class="campo"><label>Matrícula e cartório</label><input type="text" id="comp-mat" placeholder="Se houver"></div>
+      <button type="button" class="bt" data-a="addComp">Adicionar</button></div>${tabelaComp(true)}`) +
+    bloco('Classificação da área', escolha(1, 'Natureza', ['Urbano', 'Rural', 'Não se aplica']) + escolha(1, 'Conceituação', CONCEITUACOES) +
+      escolha(1, 'Classificação', ['Dominial', 'Especial', 'Uso comum'])) +
+    bloco('Localização geográfica', mapa()) + cauda(1);
+}
+function etapa2() {
+  const forma = formaInc();
+  if (area()) return bloco('Situação cartorial', `<p class="etapa-desc">As matrículas são informadas por componente, na etapa 1.</p>${tabelaComp(false)}` +
+      escolha(2, 'Há trechos sem matrícula?', SN) + `<div class="grade">${campo(2, 'Circunscrições atuais e anteriores')}</div>`) +
+    bloco('Situação dominial', `<p class="etapa-desc">Informe a situação predominante e registre as exceções nas informações complementares.</p>` +
+      escolha(2, 'Forma de incorporação', FORMAS) + (forma === 'Originalmente da União' ? escolha(2, 'Fundamento', FUNDAMENTOS) : '') +
+      (forma === 'Por Aquisição' ? escolha(2, 'Tipo de aquisição', AQUISICOES) : '') + escolha(2, 'Situação da incorporação', ['Incorporado', 'Em processo de incorporação'])) + cauda(2);
+  const cart = montar(2, [
+    ['Matrícula/Transcrição', { spunet: ['45.678', 'matricula.numero'], siapa: ['45.678', 'Número da Matrícula do Terreno'] }],
+    ['Cartório', { spunet: ['1º Ofício de Registro de Imóveis — Brasília/DF', 'Nome do Cartório (Matrícula/Transcrição)'], siapa: ['1º Ofício de Registro de Imóveis — Brasília/DF', 'Nome do Cartório de Inscrição do Imóvel'] }],
+    ['Livro', { siapa: ['2-AB', 'Número do Livro'], manual: false }],
+    ['Última folha da matrícula', { siapa: ['', 'Última Folha de Matrícula'], manual: false }],
+    ['Data de registro', { spunet: ['12/03/1998', 'matricula.dataRegistro'] }],
+    ['Área total na descrição cartorial', { spunet: ['1.250,00 m²', 'terreno.areaTotalCartorial'] }],
+    ['Circunscrições atuais e anteriores', {}], ['Área construída averbada', {}],
+    ['Tipo de proprietário', { spunet: ['União', 'imovel.proprietario.tipoProprietarioReal'], op: ['União', 'Autarquia/Fundação', 'Terceiros'] }],
+    ['Tipo de registro', { op: ['Matrícula', 'Transcrição', 'Registro cartorial inexistente', 'Registro cartorial não identificado'] }],
+    ['Matrícula individualizada', { op: SN }],
+  ]) + ((importado() && !siapa() ? S.rev['2:Tipo de proprietário'] : val(2, 'Tipo de proprietário')) === 'Terceiros' ? campo(2, 'Titular constante do registro', { obr: true, ph: 'Informe quem é o titular do imóvel' }) : '') +
+    (val(2, 'Tipo de registro') === 'Registro cartorial inexistente' ? campo(2, 'Documento SEI da certidão de inexistência de registro', { ph: 'Somente números' }) : '') +
+    (val(2, 'Tipo de registro') === 'Registro cartorial não identificado' ? aviso('Registre as diligências realizadas nas informações complementares.') : '');
+  const dom = montar(2, [
+    ['Fundamento da incorporação', { siapa: ['Terreno de marinha — DL 9.760/46, art. 2º', 'Fundamento da Incorporação'], manual: false }],
+    ['Forma de incorporação', { spunet: ['Originalmente da União', 'imovel.incorporacao (tipoIncorporacao)'], op: FORMAS }],
+    ['Fundamento', { spunet: forma === 'Originalmente da União' ? ['Terreno/Acrescido de Marinha', 'imovel.incorporacao.fundamento'] : null, op: FUNDAMENTOS, manual: false }],
+    ['Tipo de aquisição', { spunet: forma === 'Por Aquisição' ? ['Compra', 'imovel.incorporacao.tipoAquisicao'] : null, op: AQUISICOES, manual: forma === 'Por Aquisição' ? undefined : false }],
+    ['Situação da incorporação', { spunet: ['Incorporado', 'imovel.incorporacao.situacaoIncorporacao'], op: ['Incorporado', 'Em processo de incorporação'] }],
+  ]) + (importado() && !siapa() ? aviso('Verifique se “Originalmente da União” é a forma de incorporação correta para este imóvel.') : '');
+  return bloco('Situação cartorial', cart) + bloco('Situação dominial', dom) + cauda(2);
+}
+function etapa3() {
+  const natureza = !importado() || siapa() ? val(1, 'Natureza') : (S.rev['1:Natureza'] || 'Urbano');
+  let urb = area() ? '' : montar(3, [
+    ['N° Inscrição Municipal', { spunet: natureza === 'Urbano' ? ['4.012.345-6', 'imovel.numeroInscricaoMunicipal'] : null, siapa: ['212114141', 'Nro. da Inscrição Municipal'], manual: false }],
+    ['N° Inscrição Rural', { spunet: natureza === 'Rural' ? ['950.092.001.234-5', 'imovel.numeroInscricaoRural'] : null, manual: false }],
+    ['Nº da quadra', { siapa: ['14E', 'Nro. Quadra'], manual: false }], ['Nº do lote', { siapa: ['14', 'Nro. Lote do Imóvel'], manual: false }],
+    ['Nº do loteamento', { siapa: ['', 'Nro. Loteamento'], manual: false }], ['Nº da planta', { siapa: ['', 'Nro. da Planta'], manual: false }],
+  ]);
+  if (!importado() && !area() && !natureza) urb += aviso('Informe a natureza do imóvel na etapa 1 para definir se este campo será Inscrição Municipal ou Inscrição Rural.');
+  urb += (importado() ? '<h4>Complementação no diagnóstico</h4>' : '') +
+    campo(3, 'Zoneamento municipal', { area: true, ph: 'Descreva o zoneamento, os usos permitidos e eventuais restrições.' });
+  let car = '';
+  if (originaria()) {
+    car += `<div class="recuo"><p class="etapa-desc">Exibido quando a forma de incorporação é “Originalmente da União”.</p>
+      ${montar(3, [
+        ['Incorporação ex-offício ou a pedido', { spunet: ['Ex-Offício', 'imovel.incorporacao.isExOficio'], op: ['Ex-Offício', 'A Pedido'], manual: false }],
+        ['Processo LPM/LMEO/Identificação de Área da União', { spunet: ['04905.000123/1998-10', 'imovel.incorporacao.numeroProcessoLpm'], siapa: ['04905.000123/1998-10', 'Nro. do Processo de LPM/LMEO'] }],
+        ['Data da homologação', { spunet: ['15/06/1999', 'imovel.incorporacao.dataAprovacaoLpm'], siapa: ['15/06/1999', 'Data de Aprovação da LPM/LMEO'] }],
+      ])}${importado() ? '<h4>Complementação no diagnóstico</h4>' : ''}
+      ${escolha(3, 'Situação da demarcação', ['Concluída', 'LPM/LMEO posicionada', 'Iniciada', 'Não iniciada', 'Não se aplica'])}
+      ${val(3, 'Situação da demarcação') === 'Iniciada' ? campo(3, 'Estágio da demarcação') : ''}
+      ${escolha(3, 'Identificação direta', ['Concluída', 'Iniciada', 'Não iniciada'])}
+      ${campo(3, 'Demandas judiciais, recursos e outros registros', { area: true })}</div>`;
+  }
+  car += docTecnico('Há planta do imóvel?', 'Planta (PDF)', '.pdf') +
+    docTecnico('Há arquivo vetorial?', 'Arquivo vetorial', '.zip,.kml,.kmz,.shp,.geojson') +
+    docTecnico('Há memorial descritivo?', 'Memorial descritivo');
+  return bloco('Situação urbanística', urb) + bloco('Caracterização do imóvel', car) + cauda(3);
+}
+const compNome = (c) => { const i = S.comp.indexOf(c); return `${i + 1}. ${c.tipo}${c.rip ? ' · RIP ' + c.rip : ''}${c.area ? ' · ' + c.area : ''}`; };
+const refTxt = (l) => !l || !l.length ? '' : l.includes('todos') ? 'toda a área' :
+  S.comp.filter((c) => l.includes(String(c.id))).map((c) => 'componente ' + (S.comp.indexOf(c) + 1)).join(', ');
+const incTxt = (item) => { const l = S.inc[item] || []; return !l.length ? '' : l.includes('todos') ? 'toda a área' :
+  S.comp.filter((c) => l.includes(String(c.id))).map((c) => 'componente ' + (S.comp.indexOf(c) + 1)).join(', '); };
+/* Na Área, cada restrição, interferência ou afetação indica em quais componentes incide. */
+function incide(item) {
+  if (!area()) return '';
+  const l = S.inc[item] || [];
+  const op = (id, rot) => `<label><input type="checkbox" data-inc="${esc(item)}" data-comp="${id}"${l.includes(String(id)) ? ' checked' : ''}>${esc(rot)}</label>`;
+  return `<div class="recuo"><span class="rot">“${esc(item)}” incide em:</span><div class="marcas" style="margin:6px 0 10px">${op('todos', 'Toda a área')}
+    ${S.comp.map((c) => op(c.id, compNome(c))).join('')}</div>${S.comp.length ? '' : '<p class="vazio">Adicione os componentes na etapa 1 para indicar a incidência por componente.</p>'}</div>`;
+}
+function marcas(itens) {
+  const linha = (it) => `<label><input type="checkbox" data-oc="${esc(it)}"${S.ocorr.includes(it) ? ' checked' : ''}>${esc(it)}</label>`;
+  if (!area()) return `<div class="marcas">${itens.map(linha).join('')}</div>`;
+  return itens.map((it) => `<div style="margin-bottom:10px">${linha(it)}</div>${S.ocorr.includes(it) ? incide(it) : ''}`).join('');
+}
+function etapa4() {
+  const hi = val(4, 'Há interferências?'), ha = val(4, 'Há afetações?');
+  const DF = ['Dentro', 'Fora'];
+  const restr = bloco(importado() ? 'Restrições registradas no cadastro' : 'Restrições de uso/ocupação', montar(4, [
+    ['Zona/Área de Interesse Social (ZEIS)', { spunet: ['Não', 'terreno.isAreaInteresseSocial'], siapa: ['Não', 'Área de Interesse Social'], op: SN }],
+    ['Situado em área de segurança', { spunet: ['Não', 'terreno.isAreaSeguranca'], op: SN, manual: false }],
+    ['Área non aedificandi', { spunet: ['Não', 'terreno.isAreaNonAedificandi'], op: SN, manual: false }],
+    ['Tombado como patrimônio histórico, artístico e/ou cultural', { spunet: ['Não', 'terreno.isPatrimonioTombado'], op: SN, manual: false }],
+    ['Faixa de 100 m', { siapa: ['Fora', 'Faixa de 100m'], op: DF, manual: false }],
+    ['Circunferência de 1.320 m', { siapa: ['Fora', 'Circunferência de 1320m'], op: DF, manual: false }],
+  ]));
+  const restrInc = area() ? ['Zona/Área de Interesse Social (ZEIS)', 'Situado em área de segurança', 'Área non aedificandi',
+    'Tombado como patrimônio histórico, artístico e/ou cultural'].filter((r) => val(4, r) === 'Sim').map(incide).join('') : '';
+  return restr.replace(/<\/section>$/, restrInc + '</section>') + bloco('Interferências', escolha(4, 'Há interferências?', ['Sim', 'Não']) + (hi === 'Sim' ? marcas(INTERFERENCIAS) : '')) +
+    bloco('Afetações', escolha(4, 'Há afetações?', ['Sim', 'Não']) + (ha === 'Sim' ? marcas(AFETACOES) +
+      (S.ocorr.includes('Unidade de conservação') ? campo(4, 'Tipo de unidade de conservação') : '') +
+      (S.ocorr.includes('Patrimônio histórico tombado') ? escolha(4, 'Esfera do tombamento', ['Federal', 'Estadual', 'Municipal']) : '') +
+      (S.ocorr.includes('Outra afetação') ? campo(4, 'Especificação da outra afetação', { area: true }) : '') : '')) + cauda(4);
+}
+function etapa5() {
+  return bloco('Providências', `<p class="etapa-desc">Registre uma providência de cada vez.</p>
+    <div class="anexar"><div class="campo"><label>Providência</label><select id="prov-tipo"><option value="">Selecione a providência</option>
+      ${PROVIDENCIAS.map((p) => `<option>${esc(p)}</option>`).join('')}</select></div>
+      <div class="campo"><label>Detalhamento</label><input type="text" id="prov-det" placeholder="Descreva o encaminhamento"></div>
+      <button type="button" class="bt" data-a="addProv">Adicionar</button></div>
+    ${area() ? `<div class="recuo"><span class="rot">A providência refere-se a:</span><div class="marcas" style="margin:6px 0 10px">
+      <label><input type="checkbox" class="prov-ref" value="todos" checked>Toda a área</label>
+      ${S.comp.map((c) => `<label><input type="checkbox" class="prov-ref" value="${c.id}">${esc(compNome(c))}</label>`).join('')}</div></div>` : ''}
+    <table><thead><tr><th>Providência</th><th>Detalhamento</th>${area() ? '<th>Refere-se a</th>' : ''}<th>Ações</th></tr></thead><tbody>${S.prov.length ?
+      S.prov.map((p) => `<tr><td>${esc(p.tipo)}</td><td>${esc(p.det)}</td>${area() ? `<td>${esc(refTxt(p.ref)) || '—'}</td>` : ''}<td><button type="button" class="lk perigo" data-a="removerProv" data-id="${p.id}">Excluir</button></td></tr>`).join('') :
+      `<tr><td colspan="${area() ? 4 : 3}" class="vazio">Nenhuma providência adicionada.</td></tr>`}</tbody></table>`) + cauda(5);
+}
+function divergencias() {
+  return Object.keys(S.rev).filter((k) => S.rev[k] && IMP[k] !== undefined && S.rev[k] !== IMP[k])
+    .map((k) => ({ k, etapa: Number(k[0]), rotulo: k.slice(2), de: IMP[k], para: S.rev[k] }));
+}
+function lacunas() {
+  const l = [];
+  const falta = (cond, texto) => { if (cond) l.push(texto); };
+  if (area()) {
+    falta(!val(1, 'Denominação da área'), 'Etapa 1 — Denominação da área não informada');
+    falta(!S.comp.length, 'Etapa 1 — Nenhum componente adicionado à área');
+    falta(!val(2, 'Forma de incorporação'), 'Etapa 2 — Forma de incorporação não informada');
+    S.ocorr.forEach((o) => falta(!(S.inc[o] || []).length, `Etapa 4 — Incidência de “${o}” não indicada`));
+  } else if (!importado()) {
+    falta(!val(1, 'Processo SEI do imóvel'), 'Etapa 1 — Processo SEI do imóvel não informado');
+    falta(!val(1, 'CEP'), 'Etapa 1 — CEP não informado');
+    falta(!val(2, 'Tipo de registro'), 'Etapa 2 — Tipo de registro não informado');
+    falta(!val(2, 'Forma de incorporação'), 'Etapa 2 — Forma de incorporação não informada');
+  }
+  [['Há planta do imóvel?', 'da planta do imóvel'], ['Há arquivo vetorial?', 'do arquivo vetorial'], ['Há memorial descritivo?', 'do memorial descritivo']]
+    .forEach(([r, t]) => falta(!val(3, r), `Etapa 3 — Disponibilidade ${t} não informada`));
+  falta(!val(4, 'Há interferências?'), 'Etapa 4 — Existência de interferências não informada');
+  falta(!val(4, 'Há afetações?'), 'Etapa 4 — Existência de afetações não informada');
+  return l;
+}
+const podeConcluir = () => S.ciente && val(6, 'Nome completo').trim() && val(6, 'Cargo').trim();
+function etapa6() {
+  const l = lacunas(), d = divergencias();
+  const nArq = Object.values(S.arq).reduce((n, a) => n + a.length, 0);
+  return (l.length ? aviso('Há informações não preenchidas. Elas não impedem a conclusão nesta versão, mas serão destacadas no relatório.') : '') +
+    bloco('Campos não preenchidos', l.length ? l.map((t) => `<div class="item-rev"><span class="tag cinza">Não informado</span><span>${esc(t)}</span></div>`).join('') :
+      '<p class="vazio">Nenhuma lacuna identificada.</p>') +
+    bloco('Divergências registradas', d.length ? d.map((x) => `<div class="item-rev"><span class="tag laranja">Etapa ${x.etapa}</span>
+      <span><strong>${esc(x.rotulo)}:</strong> ${esc(x.de)} → ${esc(x.para)}</span></div>`).join('') : '<p class="vazio">Nenhuma divergência registrada.</p>') +
+    bloco('Resumo', `<div class="dados raso"><div><b>Origem</b>${importado() ? `RIP ${esc(S.rip)} — ${esc(S.sistema)}` : semTxt()}</div>
+      <div><b>Ocorrências</b>${S.ocorr.length} selecionada(s)</div><div><b>Providências</b>${S.prov.length} registrada(s)</div>
+      <div><b>Arquivos</b>${nArq} anexado(s)</div></div>`) +
+    bloco('Responsável pelo preenchimento', `<div class="grade">${campo(6, 'Nome completo', { obr: true, ph: 'Nome do(a) servidor(a)' })}
+      ${campo(6, 'Matrícula SIAPE / unidade', { ph: 'Ex.: 0000000 — CGINC/SPU' })}${campo(6, 'Cargo', { obr: true, ph: 'Ex.: Engenheiro(a) Civil' })}</div>
+      <label class="ciente"><input type="checkbox" id="ciente"${S.ciente ? ' checked' : ''}>
+      <span>Estou ciente das informações não preenchidas e desejo concluir o diagnóstico.</span></label>`);
+}
+const TELAS_ETAPA = [etapa1, etapa2, etapa3, etapa4, etapa5, etapa6];
+const DESC = ['Confira os dados do imóvel, sua localização e classificação.', 'Reúna os dados do registro e da incorporação do imóvel.',
+  'Registre o contexto urbanístico e as peças técnicas do imóvel.', 'Informe se foram identificadas interferências ou afetações.',
+  'Registre as providências necessárias após o diagnóstico.', 'Confira pendências, divergências e documentos antes de concluir.'];
+
+/* ---------- telas do modo independente (antes das etapas) ---------- */
+function telaOrigem() {
+  const op = (id, t, d) => `<label class="${S.origem === id ? 'on' : ''}"><input type="radio" name="origem" data-origem="${id}"${S.origem === id ? ' checked' : ''}>
+    <span><strong>${t}</strong><small>${d}</small></span></label>`;
+  return `<h2 class="etapa-titulo">Seleção do imóvel ou da área</h2><p class="etapa-desc">Escolha o que será diagnosticado. Para imóvel com RIP, o sistema de origem é identificado automaticamente.</p>
+    <div class="opcoes">${op('com', 'Imóvel com RIP', 'Pesquisar e importar dados do SPUnet ou do SIAPA.')}
+    ${op('sem', 'Imóvel sem RIP', 'Preencher o diagnóstico a partir dos documentos disponíveis.')}
+    ${op('area', 'Área', 'Conjunto de imóveis, partes de imóveis ou trechos sem RIP, diagnosticado como um todo.')}</div>
+    <div class="rodape-acoes"><span class="espaco"></span><button class="bt pri" data-a="origemOk">Continuar</button></div>`;
+}
+function telaPesquisa() {
+  return `<h2 class="etapa-titulo">Localizar imóvel pelo RIP</h2><p class="etapa-desc">O cadastro de origem será identificado automaticamente.</p>
+    <div class="busca"><input type="text" id="rip" value="${esc(S.rip)}" aria-label="RIP"><button class="bt pri" data-a="pesquisar">Pesquisar</button></div>
+    <small>Para este protótipo, qualquer RIP retorna o imóvel simulado (RIP terminado em 9 simula origem no SIAPA).</small>
+    <div class="rodape-acoes"><button class="bt liso" data-a="irOrigem">Voltar</button></div>`;
+}
+function telaResultado() {
+  return `<h2 class="etapa-titulo">Confirme o imóvel localizado</h2><p class="etapa-desc">Confira os dados mínimos antes de importar.</p>
+    <p style="margin:10px 0 16px"><span class="tag verde">Imóvel localizado</span> &nbsp;Origem identificada: <strong>${esc(S.sistema)}</strong></p>
+    <div class="dados raso"><div><b>RIP</b>${esc(S.rip)}</div><div><b>Tipo de imóvel</b>${esc(IMOVEL.nome)}</div><div><b>Área total do terreno</b>${IMOVEL.area}</div></div>
+    <div class="midia"><div><h4 style="font-size:13px;text-transform:uppercase;color:var(--suave);font-weight:400;margin-bottom:10px">Localização</h4>
+      <div class="dados raso">${LOC.map(([r, v]) => `<div><b>${r}</b>${v}</div>`).join('')}</div></div>${mapa()}</div>
+    <div class="rodape-acoes"><button class="bt liso" data-a="irPesquisa">Pesquisar outro RIP</button><span class="espaco"></span>
+    <button class="bt pri" data-a="importar">Confirmar e importar</button></div>`;
+}
+
+/* ---------- conclusão e visualização ---------- */
+function telaConcluido() {
+  const termo = originaria();
+  return `<div class="fim"><div class="ok">✓</div><h2>Diagnóstico concluído</h2>
+    <p>${S.modo === 'modulo' ? 'O requerimento segue para a análise de viabilidade da destinação. ' : ''}O registro preserva dados, lacunas, divergências, anexos e encaminhamentos.</p>
+    <div class="dados"><div><b>Registro</b>DPI-2026-0042</div><div><b>Situação</b>Concluído</div>
+      <div><b>Origem</b>${importado() ? esc(S.sistema) : area() ? 'Área' : 'Sem RIP'}</div><div><b>Responsável</b>${esc(val(6, 'Nome completo'))}</div></div>
+    <div class="acoes"><button class="bt" data-a="ver">Visualizar diagnóstico</button><button class="bt" data-a="baixar">Baixar relatório</button>
+    ${importado() ? '<button class="bt" data-a="ajustes">Ajustes a fazer no cadastro</button>' : ''}
+    ${termo ? '<button class="bt pri" data-a="termo">Preparar Termo de Incorporação</button>' : ''}</div></div>
+    <div class="rodape-acoes"><button class="bt liso" data-a="reabrir">Voltar à revisão</button></div>`;
+}
+function telaAjustes() {
+  Object.keys(VAZIO).forEach((k) => delete VAZIO[k]);
+  VIS = []; [etapa1, etapa2, etapa3, etapa4].forEach((f) => f()); VIS = null;
+  const d = divergencias(), vz = Object.keys(VAZIO).filter((k) => S.v[k]);
+  const linha = (cols) => `<tr>${cols.map((c) => `<td>${c}</td>`).join('')}</tr>`;
+  const fonte = (k) => `<span class="fonte">${esc(FONTE[k] || '')}</span>`;
+  return `<h2 class="etapa-titulo">Ajustes a fazer no cadastro</h2>
+    <p class="etapa-desc">Diagnóstico DPI-2026-0042 · RIP ${esc(S.rip)} · ${esc(S.sistema)} · Responsável: ${esc(val(6, 'Nome completo'))}${val(6, 'Cargo') ? ', ' + esc(val(6, 'Cargo')) : ''}.
+    Enquanto não houver integração, este relatório indica o que precisa ser alterado manualmente no ${esc(S.sistema)}.</p>` +
+    bloco('Dados a corrigir (divergências)', d.length ? `<table><thead><tr><th>Etapa</th><th>Campo</th><th>Campo no ${esc(S.sistema)}</th><th>Valor no cadastro</th><th>Valor apurado</th></tr></thead><tbody>
+      ${d.map((x) => linha([x.etapa, esc(x.rotulo), fonte(x.k), esc(x.de), `<strong>${esc(x.para)}</strong>`])).join('')}</tbody></table>` : '<p class="vazio">Nenhuma divergência registrada.</p>') +
+    bloco('Dados a incluir (vazios no cadastro)', vz.length ? `<table><thead><tr><th>Etapa</th><th>Campo</th><th>Campo no ${esc(S.sistema)}</th><th>Valor informado</th></tr></thead><tbody>
+      ${vz.map((k) => linha([k[0], esc(k.slice(2)), fonte(k), `<strong>${esc(S.v[k])}</strong>`])).join('')}</tbody></table>` : '<p class="vazio">Nenhum campo vazio foi preenchido.</p>') +
+    `<div class="rodape-acoes"><button class="bt liso" data-a="concluido">Voltar</button><span class="espaco"></span>
+    <button class="bt pri" data-a="imprimir">Imprimir</button></div>`;
+}
+function telaVer() {
+  const d = divergencias();
+  let h = `<div class="midia"><div class="foto">Fotos do imóvel · 1 / 3</div>${mapa()}</div>`;
+  for (let n = 1; n <= 5; n++) {
+    VIS = []; TELAS_ETAPA[n - 1](); const itens = VIS; VIS = null;
+    const pares = [];
+    if (n === 1) { pares.push(['Situação cadastral', importado() ? 'Imóvel com RIP' : semTxt()]);
+      if (area()) S.comp.forEach((c, i) => pares.push([`Componente ${i + 1}`, [c.tipo, c.rip && 'RIP ' + c.rip, c.area, c.mat].filter(Boolean).join(' · ')]));
+      if (importado()) pares.push(['RIP', S.rip], ['Sistema de origem', S.sistema]); }
+    itens.forEach(({ k, tipo }) => {
+      const rot = k.slice(2);
+      if (tipo === 'imp') pares.push([rot, S.rev[k] && S.rev[k] !== IMP[k] ? `${S.rev[k]} (cadastro: ${IMP[k]})` : IMP[k]]);
+      else if (tipo === 'campo' && S.v[k]) pares.push([rot, S.v[k]]);
+    });
+    const arqs = S.arq[n] || [], dv = d.filter((x) => x.etapa === n);
+    let corpo = pares.length ? `<div class="dados">${pares.map(([r, v]) => `<div><b>${esc(r)}</b>${esc(v)}</div>`).join('')}</div>` :
+      '<p class="vazio">Nenhum campo preenchido nesta etapa.</p>';
+    if (n === 4) corpo += `<div class="dados"><div class="larga"><b>Interferências e afetações registradas</b>${S.ocorr.length ? S.ocorr.map((o) => esc(o) + (area() && incTxt(o) ? ` — incide em ${esc(incTxt(o))}` : '')).join('<br>') : 'Nenhuma ocorrência selecionada.'}</div></div>`;
+    if (n === 5) corpo += `<div class="dados"><div class="larga"><b>Providências registradas</b>${S.prov.length ?
+      S.prov.map((p) => `${esc(p.tipo)} — ${esc(p.det)}` + (area() && refTxt(p.ref) ? ` (${esc(refTxt(p.ref))})` : '')).join('<br>') : 'Nenhuma providência registrada.'}</div></div>`;
+    if (dv.length) corpo += `<div class="dados"><div class="larga"><b>Divergências</b>${dv.map((x) => `${esc(x.rotulo)}: cadastro “${esc(x.de)}” · apurado “${esc(x.para)}”`).join('<br>')}</div></div>`;
+    corpo += `<div class="dados"><div class="larga"><b>Arquivos</b>${arqs.length ? arqs.map((f) => `${esc(f.cat)}: ${esc(f.nome)}`).join('; ') : 'Nenhum arquivo anexado.'}</div>
+      <div class="larga"><b>Informações complementares</b>${esc(S.v[n + ':Informações complementares']) || 'Nenhuma informação complementar registrada.'}</div></div>`;
+    h += `<details class="sec"><summary>${n}. ${ETAPAS[n - 1]}<small>${pares.length} informação(ões) · ${arqs.length} arquivo(s)</small></summary><div class="corpo">${corpo}</div></details>`;
+  }
+  h += `<div class="dados raso" style="margin-top:20px"><div><b>Responsável pelo preenchimento</b>${esc(val(6, 'Nome completo'))}</div>
+    <div><b>Matrícula SIAPE / unidade</b>${esc(val(6, 'Matrícula SIAPE / unidade')) || 'Não informado'}</div><div><b>Cargo</b>${esc(val(6, 'Cargo'))}</div></div>`;
+  return h + `<div class="rodape-acoes"><button class="bt liso" data-a="concluido">Voltar</button><span class="espaco"></span>
+    <button class="bt pri" data-a="baixar">Baixar relatório</button></div>`;
+}
+
+/* ---------- moldura ---------- */
+function render(topo) {
+  const modulo = S.modo === 'modulo', nasEtapas = S.tela === 'etapas', fim = ['concluido', 'ver', 'ajustes'].includes(S.tela);
+  const seg = (grupo, id, rot, on) => `<button data-a="${grupo}" data-id="${id}" class="${on ? 'on' : ''}">${rot}</button>`;
+  let h = `<div class="proto"><b>PROTÓTIPO</b><span>Ver como:</span><span class="seg">${seg('modo', 'modulo', 'Dentro do Módulo de Instrução', modulo)}${seg('modo', 'independente', 'Tela independente', !modulo)}</span>
+    ${modulo ? `<span>Objeto indicado:</span><span class="seg">${seg('indicado', 'spunet', 'RIP no SPUnet', importado() && !siapa())}${seg('indicado', 'siapa', 'RIP no SIAPA', siapa())}${seg('indicado', 'sem', 'Sem RIP', S.origem === 'sem')}${seg('indicado', 'area', 'Área', area())}</span>` : ''}
+    <button class="lk" data-a="limpar">Limpar e recomeçar</button></div>
+  <header class="topo"><button class="menu" aria-label="Menu" data-a="nada"></button>
+    <div class="marca">SPU<span>net</span><i><u style="height:14px;background:#168821"></u><u style="height:22px;background:#1351b4"></u><u style="height:30px;background:#1351b4"></u><u style="height:24px;background:#ffcd07"></u><u style="height:16px;background:#e9571e"></u></i></div>
+    <div class="titulo-sis"><strong>SPUnet</strong><small>Secretaria do Patrimônio da União</small></div>
+    <div class="dir"><span class="ico">i</span><span class="ico">!</span><span class="usuario"><i>U</i>Olá, <strong>Usuário</strong></span></div></header>
+  <main class="pagina"><nav class="trilha"><a href="#" onclick="return false">Início</a><span class="sep">›</span>
+    ${modulo ? `<a href="#" onclick="return false">Instrução da Destinação</a><span class="sep">›</span><span>Requerimento ${REQ.numero}</span>` : '<span>Diagnóstico do imóvel</span>'}
+    <span class="tempo"><span class="ico">◷</span>60:00</span></nav>
+  <div class="cab"><h1>${modulo ? 'Instrução do processo de Destinação' : 'Diagnóstico do imóvel'}</h1>
+    <span class="tag ${fim ? (modulo ? 'laranja' : 'verde') : 'laranja'}">${fim ? (modulo ? 'Análise de viabilidade' : 'Concluído') : (modulo || nasEtapas ? 'Diagnóstico do imóvel' : 'Novo diagnóstico')}</span></div>`;
+  if (modulo) {
+    h += `<ol class="passos"><li class="feito"><span>1</span>Requerimento</li><li class="feito"><span>2</span>Imóvel</li>
+      <li class="atual"><span>3</span>Caracterização</li><li><span>4</span>Destinação</li></ol>
+      <section class="resumo"><h2>${REQ.numero}</h2><div class="dados"><div class="larga"><b>Tipo de serviço</b>${REQ.servico}</div>
+      <div><b>Data de abertura</b>${REQ.abertura}</div><div><b>NUP</b>${REQ.nup}</div>
+      <div><b>${area() ? 'Área indicada' : 'Imóvel indicado'}</b>${importado() ? `RIP ${esc(S.rip)} — ${LOC[1][1]}, ${LOC[2][1]}, ${LOC[5][1]}` : area() ? esc(val(1, 'Denominação da área')) || 'Área — a identificar' : 'Sem RIP 1 — imóvel indicado sem cadastro'}</div>
+      <div><b>Origem dos dados</b>${importado() ? esc(S.sistema) : 'Informados na indicação do imóvel'}</div></div></section>`;
+  } else if (nasEtapas || fim) {
+    h += `<section class="resumo"><div class="dados raso"><div><b>${area() ? 'Área' : 'Imóvel'}</b>${importado() ? IMOVEL.nome + ' — ' + LOC[1][1] + ', ' + LOC[2][1] : area() ? esc(val(1, 'Denominação da área')) || 'Área' : 'Imóvel sem RIP'}</div>
+      <div><b>RIP</b>${importado() ? esc(S.rip) : 'Não possui'}</div><div><b>Origem dos dados</b>${importado() ? esc(S.sistema) : 'Preenchimento manual'}</div></div></section>`;
+  }
+  if (nasEtapas) {
+    h += `<div class="abas" role="tablist">${ETAPAS.map((nome, i) => `<button role="tab" data-a="etapa" data-id="${i + 1}"
+      class="${S.etapa === i + 1 ? 'atual' : S.etapa > i + 1 ? 'feita' : ''}" aria-selected="${S.etapa === i + 1}"><i>${i + 1}</i>${nome}</button>`).join('')}</div>
+      <h2 class="etapa-titulo">${ETAPAS[S.etapa - 1]}</h2><p class="etapa-desc">${DESC[S.etapa - 1]}</p>${TELAS_ETAPA[S.etapa - 1]()}
+      <div class="rodape-acoes"><button class="bt liso" data-a="voltar">Voltar</button><span class="espaco"></span>
+      <button class="bt" data-a="salvar">Salvar rascunho</button>
+      <button class="bt pri" id="avancar" data-a="avancar"${S.etapa === 6 && !podeConcluir() ? ' disabled' : ''}>${S.etapa === 6 ? 'Concluir diagnóstico' : 'Salvar e continuar'}</button></div>`;
+  } else h += { origem: telaOrigem, pesquisa: telaPesquisa, resultado: telaResultado, concluido: telaConcluido, ver: telaVer, ajustes: telaAjustes }[S.tela]();
+  h += `</main><footer class="base"><strong>gov.br</strong><span>Protótipo funcional com dados simulados · CGGES — Escritório de Processos</span></footer>`;
+  const y = window.scrollY;
+  document.getElementById('app').innerHTML = h;
+  window.scrollTo(0, topo ? 0 : y);
+  gravar();
+}
+
+/* ---------- ações ---------- */
+const ir = (tela, etapa) => { S.tela = tela; if (etapa) S.etapa = etapa; render(true); };
+const A = {
+  nada() {},
+  modo(el) {
+    S.modo = el.dataset.id;
+    if (S.modo === 'modulo') { if (!['etapas', 'concluido', 'ver', 'ajustes'].includes(S.tela)) S.tela = 'etapas'; }
+    else if (S.tela === 'etapas' && S.etapa === 1 && !Object.keys(S.v).length) S.tela = 'origem';
+    render(true);
+  },
+  indicado(el) { const id = el.dataset.id; S.origem = id === 'sem' || id === 'area' ? id : 'com'; if (S.origem === 'com') { S.sistema = id === 'siapa' ? 'SIAPA' : 'SPUnet'; S.rip = id === 'siapa' ? '9701 0101116-29' : '0000001.23456-78'; } S.tela = 'etapas'; render(); },
+  limpar() { if (confirm('Apagar tudo o que foi preenchido e recomeçar?')) { const m = S.modo; S = inicial(); S.modo = m; if (m !== 'modulo') S.tela = 'origem'; abertos.clear(); render(true); } },
+  origemOk() { S.etapa = 1; ir(importado() ? 'pesquisa' : 'etapas'); },
+  irOrigem() { ir('origem'); }, irPesquisa() { ir('pesquisa'); },
+  pesquisar() { S.rip = document.getElementById('rip').value.trim() || S.rip; S.sistema = S.rip.endsWith('9') ? 'SIAPA' : 'SPUnet'; ir('resultado'); },
+  importar() { ir('etapas', 1); },
+  etapa(el) { S.etapa = Number(el.dataset.id); render(true); },
+  voltar() {
+    if (S.etapa > 1) return ir('etapas', S.etapa - 1);
+    if (S.modo === 'modulo') return toast('Volta ao passo 2 — Imóvel (fora deste protótipo).');
+    ir(importado() ? 'resultado' : 'origem');
+  },
+  salvar() { gravar(); toast('Rascunho salvo neste navegador.'); },
+  avancar() { if (S.etapa < 6) ir('etapas', S.etapa + 1); else if (podeConcluir()) ir('concluido'); },
+  reabrir() { ir('etapas', 6); }, concluido() { ir('concluido'); }, ver() { ir('ver'); },
+  ajustes() { ir('ajustes'); }, imprimir() { window.print(); },
+  baixar() { toast('Download do relatório simulado.'); },
+  termo() { toast('Minuta do Termo de Incorporação preparada (simulação).'); },
+  abrirDiv(el) { abertos.add(el.dataset.key); render(); document.querySelector(`[data-rev="${CSS.escape(el.dataset.key)}"]`)?.focus(); },
+  fecharDiv(el) { abertos.delete(el.dataset.key); render(); },
+  removerDiv(el) { abertos.delete(el.dataset.key); definirRev(el.dataset.key, ''); render(); },
+  removerArq(el) {
+    if (!confirm('Excluir este arquivo da etapa?')) return;
+    const n = el.dataset.etapa; S.arq[n] = (S.arq[n] || []).filter((f) => String(f.id) !== el.dataset.id); render();
+  },
+  addComp() {
+    const g = (id) => document.getElementById(id).value.trim();
+    const tipo = g('comp-tipo'), rip = g('comp-rip'), ar = g('comp-area'), mat = g('comp-mat');
+    if (!tipo) return toast('Selecione o tipo de componente.');
+    if (tipo !== 'Trecho sem RIP' && !rip) return toast('Informe o RIP do imóvel.');
+    if (tipo !== 'Imóvel com RIP — inteiro' && !ar) return toast('Informe a área abrangida.');
+    S.comp.push({ id: Date.now(), tipo, rip: tipo === 'Trecho sem RIP' ? '' : rip, area: ar, mat }); render();
+  },
+  removerComp(el) { if (confirm('Excluir este componente da área?')) { S.comp = S.comp.filter((c) => String(c.id) !== el.dataset.id); Object.keys(S.inc).forEach((k) => { S.inc[k] = S.inc[k].filter((x) => x !== el.dataset.id); }); S.prov.forEach((p) => { if (p.ref) p.ref = p.ref.filter((x) => x !== el.dataset.id); }); render(); } },
+  addProv() {
+    const tipo = document.getElementById('prov-tipo').value, det = document.getElementById('prov-det').value.trim();
+    if (!tipo || !det) return toast('Selecione a providência e informe o detalhamento.');
+    let ref;
+    if (area()) {
+      ref = [...document.querySelectorAll('.prov-ref:checked')].map((e) => e.value);
+      if (ref.includes('todos')) ref = ['todos'];
+      if (!ref.length) return toast('Indique a que a providência se refere.');
+    }
+    S.prov.push({ id: Date.now(), tipo, det, ref }); render();
+  },
+  removerProv(el) { if (confirm('Excluir esta providência?')) { S.prov = S.prov.filter((p) => String(p.id) !== el.dataset.id); render(); } },
+};
+function definirRev(k, valor) {
+  if (valor) S.rev[k] = valor; else delete S.rev[k];
+  if (k === '3:O imóvel integra loteamento?' && valor && valor !== 'Sim') {
+    ['3:Loteamento, quadra e lote', '3:Documento SEI da planta do loteamento'].forEach((d) => { delete S.rev[d]; abertos.delete(d); });
+  }
+}
+const app = document.getElementById('app');
+app.addEventListener('click', (e) => { const el = e.target.closest('[data-a]'); if (el && !el.disabled) A[el.dataset.a](el); });
+app.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.dataset.k && el.type !== 'radio') {
+    S.v[el.dataset.k] = el.value; gravar();
+    if (S.etapa === 6) { const b = document.getElementById('avancar'); if (b) b.disabled = !podeConcluir(); }
+  } else if (el.dataset.rev && el.tagName === 'INPUT') {
+    definirRev(el.dataset.rev, el.value.trim()); gravar();
+    el.closest('.imp').classList.toggle('div', Boolean(el.value.trim()) && el.value.trim() !== IMP[el.dataset.rev]);
+  }
+});
+app.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.type === 'radio' && el.dataset.k) {
+    const k = el.dataset.k, cat = k === '4:Há interferências?' ? INTERFERENCIAS : k === '4:Há afetações?' ? AFETACOES : null;
+    if (cat && el.value === 'Não' && S.ocorr.some((o) => cat.includes(o))) {
+      if (!confirm('Alterar para Não removerá as ocorrências selecionadas. Continuar?')) return render();
+      S.ocorr = S.ocorr.filter((o) => !cat.includes(o));
+    }
+    const doc = { '3:Há planta do imóvel?': 'Planta (PDF)', '3:Há arquivo vetorial?': 'Arquivo vetorial', '3:Há memorial descritivo?': 'Memorial descritivo' }[k];
+    if (doc && el.value === 'Não' && (S.arq[3] || []).some((f) => f.cat === doc)) {
+      if (!confirm('Alterar para Não removerá os arquivos anexados. Continuar?')) return render();
+      S.arq[3] = S.arq[3].filter((f) => f.cat !== doc);
+    }
+    S.v[k] = el.value; render();
+  } else if (el.dataset.origem) { S.origem = el.dataset.origem; render(); }
+  else if (el.classList.contains('prov-ref')) {
+    if (el.checked) document.querySelectorAll('.prov-ref').forEach((x) => { if ((x.value === 'todos') !== (el.value === 'todos')) x.checked = false; });
+  }
+  else if (el.dataset.inc) {
+    const item = el.dataset.inc, id = el.dataset.comp; let l = S.inc[item] || [];
+    l = !el.checked ? l.filter((x) => x !== id) : id === 'todos' ? ['todos'] : [...l.filter((x) => x !== 'todos'), id];
+    S.inc[item] = l; render();
+  }
+  else if (el.dataset.oc) { const o = el.dataset.oc; S.ocorr = el.checked ? [...S.ocorr, o] : S.ocorr.filter((x) => x !== o); if (!el.checked) delete S.inc[o]; render(); }
+  else if (el.dataset.rev && el.tagName === 'SELECT') { definirRev(el.dataset.rev, el.value); render(); }
+  else if (el.dataset.tipoarq) { S.tipoArq[el.dataset.tipoarq] = el.value; render(); }
+  else if (el.dataset.arq) {
+    const n = el.dataset.arq, cat = el.dataset.cat || S.tipoArq[n] || 'Sem tipologia', agora = Date.now();
+    S.arq[n] = [...(S.arq[n] || []), ...Array.from(el.files).map((f, i) => ({ id: agora + i, nome: f.name, cat }))]; render();
+  } else if (el.id === 'ciente') { S.ciente = el.checked; gravar(); document.getElementById('avancar').disabled = !podeConcluir(); }
+});
+// registra os valores importados (necessário para divergências ao recarregar direto na revisão)
+VIS = []; [etapa1, etapa2, etapa3, etapa4].forEach((f) => f()); VIS = null;
+render(true);
+</script>
+</body>
+</html>
