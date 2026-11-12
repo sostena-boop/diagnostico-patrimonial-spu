@@ -196,9 +196,9 @@ details.sec .corpo .dados { padding-left: 0; }
 <script>
 'use strict';
 /* Protótipo funcional — dados simulados, estado guardado só neste navegador. */
-const CHAVE = 'diagnostico-imovel-spunet-v6';
+const CHAVE = 'diagnostico-imovel-spunet-v7';
 const ETAPAS = ['Dados do imóvel', 'Situação cartorial e dominial', 'Situação urbanística e caracterização',
-  'Interferências e afetações', 'Encaminhamentos', 'Revisão e conclusão'];
+  'Interferências e afetações', 'Revisão', 'Encaminhamentos e conclusão'];
 const TIPOS_DOC = ['Planta (PDF)', 'Arquivo vetorial', 'Matrícula', 'Transcrição', 'Certidão cartorial',
   'Certidão de inexistência de registro', 'Memorial descritivo', 'Relatório técnico',
   'Despacho técnico conclusivo', 'Declaração ou ateste técnico', 'Documento judicial', 'Foto', 'Outros documentos'];
@@ -375,7 +375,7 @@ function etapa1() {
   }
   return h + montar(1, lista) + bloco('Localização geográfica', mapa()) + cauda(1);
 }
-const TIPOS_COMP = ['Imóvel com RIP — inteiro', 'Imóvel com RIP — parte', 'Trecho sem RIP'];
+const TIPOS_COMP = ['Imóvel com RIP — inteiro', 'Imóvel com RIP — parte', 'Trecho sem RIP', 'Área de terceiro'];
 function tabelaComp(acoes) {
   return `<table><thead><tr><th>Componente</th><th>RIP</th><th>Sistema</th><th>Área abrangida</th><th>Matrícula</th>${acoes ? '<th>Ações</th>' : ''}</tr></thead><tbody>${S.comp.length ?
     S.comp.map((c) => `<tr><td>${esc(c.tipo)}</td><td>${esc(c.rip) || '—'}</td><td>${c.rip ? (c.rip.endsWith('9') ? 'SIAPA' : 'SPUnet') : '—'}</td>
@@ -488,8 +488,12 @@ function etapa4() {
   ]));
   const restrInc = area() ? ['Zona/Área de Interesse Social (ZEIS)', 'Situado em área de segurança', 'Área non aedificandi',
     'Tombado como patrimônio histórico, artístico e/ou cultural'].filter((r) => val(4, r) === 'Sim').map(incide).join('') : '';
-  return restr.replace(/<\/section>$/, restrInc + '</section>') + bloco('Interferências', escolha(4, 'Há interferências?', ['Sim', 'Não']) + (hi === 'Sim' ? marcas(INTERFERENCIAS) : '')) +
-    bloco('Afetações', escolha(4, 'Há afetações?', ['Sim', 'Não']) + (ha === 'Sim' ? marcas(AFETACOES) +
+  const usoComum = val(4, 'O imóvel é ou contém bem de uso comum?');
+  return bloco('Localização geográfica', '<p class="etapa-desc">O mesmo mapa da etapa 1, repetido aqui para apoiar a verificação de interferências e afetações.</p>' + mapa()) +
+    restr.replace(/<\/section>$/, restrInc + '</section>') + bloco('Interferências', escolha(4, 'Há interferências?', ['Sim', 'Não']) + (hi === 'Sim' ? marcas(INTERFERENCIAS) : '')) +
+    bloco('Afetações', escolha(4, 'O imóvel é ou contém bem de uso comum?', ['Não', 'É bem de uso comum', 'Contém bem de uso comum em parte']) +
+      (usoComum === 'Contém bem de uso comum em parte' ? campo(4, 'Descrição da parte de uso comum', { area: true }) : '') +
+      (usoComum && usoComum !== 'Não' ? incide('Bem de uso comum') : '') + escolha(4, 'Há afetações?', ['Sim', 'Não']) + (ha === 'Sim' ? marcas(AFETACOES) +
       (S.ocorr.includes('Unidade de conservação') ? campo(4, 'Tipo de unidade de conservação') : '') +
       (S.ocorr.includes('Patrimônio histórico tombado') ? escolha(4, 'Esfera do tombamento', ['Federal', 'Estadual', 'Municipal']) : '') +
       (S.ocorr.includes('Outra afetação') ? campo(4, 'Especificação da outra afetação', { area: true }) : '') : '')) + cauda(4);
@@ -505,7 +509,11 @@ function etapa5() {
       ${S.comp.map((c) => `<label><input type="checkbox" class="prov-ref" value="${c.id}">${esc(compNome(c))}</label>`).join('')}</div></div>` : ''}
     <table><thead><tr><th>Providência</th><th>Detalhamento</th>${area() ? '<th>Refere-se a</th>' : ''}<th>Ações</th></tr></thead><tbody>${S.prov.length ?
       S.prov.map((p) => `<tr><td>${esc(p.tipo)}</td><td>${esc(p.det)}</td>${area() ? `<td>${esc(refTxt(p.ref)) || '—'}</td>` : ''}<td><button type="button" class="lk perigo" data-a="removerProv" data-id="${p.id}">Excluir</button></td></tr>`).join('') :
-      `<tr><td colspan="${area() ? 4 : 3}" class="vazio">Nenhuma providência adicionada.</td></tr>`}</tbody></table>`) + cauda(5);
+      `<tr><td colspan="${area() ? 4 : 3}" class="vazio">Nenhuma providência adicionada.</td></tr>`}</tbody></table>`) + cauda(6) +
+    bloco('Responsável pelo preenchimento', `<div class="grade">${campo(6, 'Nome completo', { obr: true, ph: 'Nome do(a) servidor(a)' })}
+      ${campo(6, 'Matrícula SIAPE / unidade', { ph: 'Ex.: 0000000 — CGINC/SPU' })}${campo(6, 'Cargo', { obr: true, ph: 'Ex.: Engenheiro(a) Civil' })}</div>
+      <label class="ciente"><input type="checkbox" id="ciente"${S.ciente ? ' checked' : ''}>
+      <span>Estou ciente das informações não preenchidas apontadas na revisão e desejo concluir o diagnóstico.</span></label>`);
 }
 function divergencias() {
   return Object.keys(S.rev).filter((k) => S.rev[k] && IMP[k] !== undefined && S.rev[k] !== IMP[k])
@@ -529,29 +537,26 @@ function lacunas() {
     .forEach(([r, t]) => falta(!val(3, r), `Etapa 3 — Disponibilidade ${t} não informada`));
   falta(!val(4, 'Há interferências?'), 'Etapa 4 — Existência de interferências não informada');
   falta(!val(4, 'Há afetações?'), 'Etapa 4 — Existência de afetações não informada');
+  falta(!val(4, 'O imóvel é ou contém bem de uso comum?'), 'Etapa 4 — Bem de uso comum não informado');
   return l;
 }
 const podeConcluir = () => S.ciente && val(6, 'Nome completo').trim() && val(6, 'Cargo').trim();
 function etapa6() {
   const l = lacunas(), d = divergencias();
   const nArq = Object.values(S.arq).reduce((n, a) => n + a.length, 0);
-  return (l.length ? aviso('Há informações não preenchidas. Elas não impedem a conclusão nesta versão, mas serão destacadas no relatório.') : '') +
+  return (l.length ? aviso('Há informações não preenchidas. Elas não impedem a conclusão nesta versão, mas serão destacadas no relatório. Volte às etapas indicadas ou siga para os encaminhamentos.') : '') +
     bloco('Campos não preenchidos', l.length ? l.map((t) => `<div class="item-rev"><span class="tag cinza">Não informado</span><span>${esc(t)}</span></div>`).join('') :
       '<p class="vazio">Nenhuma lacuna identificada.</p>') +
     bloco('Divergências registradas', d.length ? d.map((x) => `<div class="item-rev"><span class="tag laranja">Etapa ${x.etapa}</span>
       <span><strong>${esc(x.rotulo)}:</strong> ${esc(x.de)} → ${esc(x.para)}</span></div>`).join('') : '<p class="vazio">Nenhuma divergência registrada.</p>') +
     bloco('Resumo', `<div class="dados raso"><div><b>Origem</b>${importado() ? `RIP ${esc(S.rip)} — ${esc(S.sistema)}` : semTxt()}</div>
-      <div><b>Ocorrências</b>${S.ocorr.length} selecionada(s)</div><div><b>Providências</b>${S.prov.length} registrada(s)</div>
-      <div><b>Arquivos</b>${nArq} anexado(s)</div></div>`) +
-    bloco('Responsável pelo preenchimento', `<div class="grade">${campo(6, 'Nome completo', { obr: true, ph: 'Nome do(a) servidor(a)' })}
-      ${campo(6, 'Matrícula SIAPE / unidade', { ph: 'Ex.: 0000000 — CGINC/SPU' })}${campo(6, 'Cargo', { obr: true, ph: 'Ex.: Engenheiro(a) Civil' })}</div>
-      <label class="ciente"><input type="checkbox" id="ciente"${S.ciente ? ' checked' : ''}>
-      <span>Estou ciente das informações não preenchidas e desejo concluir o diagnóstico.</span></label>`);
+      <div><b>Ocorrências</b>${S.ocorr.length} selecionada(s)</div>
+      <div><b>Arquivos</b>${nArq} anexado(s)</div></div>`);
 }
-const TELAS_ETAPA = [etapa1, etapa2, etapa3, etapa4, etapa5, etapa6];
+const TELAS_ETAPA = [etapa1, etapa2, etapa3, etapa4, etapa6, etapa5];   // 5 = revisão, 6 = encaminhamentos e conclusão
 const DESC = ['Confira os dados do imóvel, sua localização e classificação.', 'Reúna os dados do registro e da incorporação do imóvel.',
   'Registre o contexto urbanístico e as peças técnicas do imóvel.', 'Informe se foram identificadas interferências ou afetações.',
-  'Registre as providências necessárias após o diagnóstico.', 'Confira pendências, divergências e documentos antes de concluir.'];
+  'Confira pendências, divergências e documentos antes de registrar os encaminhamentos.', 'Registre as providências necessárias e conclua o diagnóstico.'];
 
 /* ---------- telas do modo independente (antes das etapas) ---------- */
 function telaOrigem() {
@@ -589,7 +594,7 @@ function telaConcluido() {
     <div class="acoes"><button class="bt" data-a="ver">Visualizar diagnóstico</button><button class="bt" data-a="baixar">Baixar relatório</button>
     ${importado() ? '<button class="bt" data-a="ajustes">Ajustes a fazer no cadastro</button>' : ''}
     ${termo ? '<button class="bt pri" data-a="termo">Preparar Termo de Incorporação</button>' : ''}</div></div>
-    <div class="rodape-acoes"><button class="bt liso" data-a="reabrir">Voltar à revisão</button></div>`;
+    <div class="rodape-acoes"><button class="bt liso" data-a="reabrir">Voltar ao formulário</button></div>`;
 }
 function telaAjustes() {
   Object.keys(VAZIO).forEach((k) => delete VAZIO[k]);
@@ -610,7 +615,7 @@ function telaAjustes() {
 function telaVer() {
   const d = divergencias();
   let h = `<div class="midia"><div class="foto">Fotos do imóvel · 1 / 3</div>${mapa()}</div>`;
-  for (let n = 1; n <= 5; n++) {
+  for (const n of [1, 2, 3, 4, 6]) {
     VIS = []; TELAS_ETAPA[n - 1](); const itens = VIS; VIS = null;
     const pares = [];
     if (n === 1) { pares.push(['Situação cadastral', importado() ? 'Imóvel com RIP' : semTxt()]);
@@ -625,15 +630,13 @@ function telaVer() {
     let corpo = pares.length ? `<div class="dados">${pares.map(([r, v]) => `<div><b>${esc(r)}</b>${esc(v)}</div>`).join('')}</div>` :
       '<p class="vazio">Nenhum campo preenchido nesta etapa.</p>';
     if (n === 4) corpo += `<div class="dados"><div class="larga"><b>Interferências e afetações registradas</b>${S.ocorr.length ? S.ocorr.map((o) => esc(o) + (area() && incTxt(o) ? ` — incide em ${esc(incTxt(o))}` : '')).join('<br>') : 'Nenhuma ocorrência selecionada.'}</div></div>`;
-    if (n === 5) corpo += `<div class="dados"><div class="larga"><b>Providências registradas</b>${S.prov.length ?
+    if (n === 6) corpo += `<div class="dados"><div class="larga"><b>Providências registradas</b>${S.prov.length ?
       S.prov.map((p) => `${esc(p.tipo)} — ${esc(p.det)}` + (area() && refTxt(p.ref) ? ` (${esc(refTxt(p.ref))})` : '')).join('<br>') : 'Nenhuma providência registrada.'}</div></div>`;
     if (dv.length) corpo += `<div class="dados"><div class="larga"><b>Divergências</b>${dv.map((x) => `${esc(x.rotulo)}: cadastro “${esc(x.de)}” · apurado “${esc(x.para)}”`).join('<br>')}</div></div>`;
     corpo += `<div class="dados"><div class="larga"><b>Arquivos</b>${arqs.length ? arqs.map((f) => `${esc(f.cat)}: ${esc(f.nome)}`).join('; ') : 'Nenhum arquivo anexado.'}</div>
       <div class="larga"><b>Informações complementares</b>${esc(S.v[n + ':Informações complementares']) || 'Nenhuma informação complementar registrada.'}</div></div>`;
-    h += `<details class="sec"><summary>${n}. ${ETAPAS[n - 1]}<small>${pares.length} informação(ões) · ${arqs.length} arquivo(s)</small></summary><div class="corpo">${corpo}</div></details>`;
+    h += `<details class="sec"><summary>${ETAPAS[n - 1]}<small>${pares.length} informação(ões) · ${arqs.length} arquivo(s)</small></summary><div class="corpo">${corpo}</div></details>`;
   }
-  h += `<div class="dados raso" style="margin-top:20px"><div><b>Responsável pelo preenchimento</b>${esc(val(6, 'Nome completo'))}</div>
-    <div><b>Matrícula SIAPE / unidade</b>${esc(val(6, 'Matrícula SIAPE / unidade')) || 'Não informado'}</div><div><b>Cargo</b>${esc(val(6, 'Cargo'))}</div></div>`;
   return h + `<div class="rodape-acoes"><button class="bt liso" data-a="concluido">Voltar</button><span class="espaco"></span>
     <button class="bt pri" data-a="baixar">Baixar relatório</button></div>`;
 }
@@ -719,7 +722,7 @@ const A = {
     const g = (id) => document.getElementById(id).value.trim();
     const tipo = g('comp-tipo'), rip = g('comp-rip'), ar = g('comp-area'), mat = g('comp-mat');
     if (!tipo) return toast('Selecione o tipo de componente.');
-    if (tipo !== 'Trecho sem RIP' && !rip) return toast('Informe o RIP do imóvel.');
+    if (tipo.startsWith('Imóvel com RIP') && !rip) return toast('Informe o RIP do imóvel.');
     if (tipo !== 'Imóvel com RIP — inteiro' && !ar) return toast('Informe a área abrangida.');
     S.comp.push({ id: Date.now(), tipo, rip: tipo === 'Trecho sem RIP' ? '' : rip, area: ar, mat }); render();
   },
